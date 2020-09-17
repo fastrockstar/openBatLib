@@ -483,7 +483,7 @@ def run_loss_DC(_E_BAT, _P_PV2AC_in, _P_PV2AC_out, _P_PV2BAT_in, _P_BAT2AC_out, 
 
     return _Ppv2ac_out, _Ppv2bat_in, _Pbat2ac_out, _Ppvbs, _Pbat, _soc, _soc0
 
-#@nb.jit(nopython=True)
+@nb.jit(nopython=True)
 def run_loss_AC(_E_BAT, _eta_BAT, _t_CONSTANT, _P_SYS_SOC0_DC, _P_SYS_SOC0_AC, _P_SYS_SOC1_DC, _P_SYS_SOC1_AC, _AC2BAT_a_in, _AC2BAT_b_in, _AC2BAT_c_in, _BAT2AC_a_out, _BAT2AC_b_out, _BAT2AC_c_out, _P_AC2BAT_DEV, _P_BAT2AC_DEV, _P_BAT2AC_out, _P_AC2BAT_in, _t_DEAD , _SOC_h, _dt, _th, _soc0, _tend, _soc, _Pr, _Pbs, _Pbat):
     # Initialization of particular variables
     _P_AC2BAT_min = _AC2BAT_c_in # Minimum AC charging power

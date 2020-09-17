@@ -163,19 +163,25 @@ class BatModAC(object):
     """
     _version = '0.1'
 
-    def __init__(self, fparameter, fmat, system, ref_case, losses=False):
-        self.load_sys_parameter(fparameter, system)
-        self.ppv = self.load_input(fmat, 'ppv')
-        
+    def __init__(self, parameter, ppv, pl, Pr, Pbs, Ppv, Ppvs, Pperi):
+        self.parameter = parameter
+        self.ppv = ppv
+        self.pl = pl
+        self.Pr = Pr
+        self.Pbs = Pbs
+        self.Ppv = Ppv
+        self.Ppvs = Ppvs
+        self.Pperi = Pperi
+        '''
         if ref_case == '1' and self.parameter['ref_1'] or ref_case == '2' and self.parameter['ref_2']:
             self.load_ref_case(fparameter, ref_case, fmat)
-        
-        self.simulation_loss()
+        '''
+        self.simulation()
         
         self.bat_mod_res()
 
-        print(' ')
-
+        #print(' ')
+    '''
     def load_input(self, fname, name):
         """Loads power time series
 
@@ -185,7 +191,8 @@ class BatModAC(object):
         :type name: string
         """
         return tools.load_mat(fname, name)
-
+    '''
+    '''
     def load_ref_case(self, fparameter, ref_case, fmat):
             
         if ref_case == '1':
@@ -210,19 +217,21 @@ class BatModAC(object):
         self.parameter['PV2AC_a_out'] = self.inverter_parameter['PV2AC_a_out']
         self.parameter['PV2AC_b_out'] = self.inverter_parameter['PV2AC_b_out']
         self.parameter['PV2AC_c_out'] = self.inverter_parameter['PV2AC_c_out']
-    
+    '''
+    '''
     def load_sys_parameter(self, fparameter, system):
-        self.parameter = tools.load_parameter(fparameter, system)
-        self.parameter = tools.eta2abc(self.parameter)
-
-    def simulation_loss(self, pvmod=True):
+        #self.parameter = tools.load_parameter(fparameter, system)
+        #self.parameter = tools.eta2abc(self.parameter)
+        pass
+    '''
+    def simulation(self, pvmod=True):
         ## PerModAC: Performance Simulation Model for AC-coupled PV-Battery Systems
         '''
         TODO: Preallocation verschieben
               Pr anpassen
         '''
         # Preallocation
-        self.Pbs = np.zeros_like(self.ppv) # AC power of the battery system in W
+        #self.Pbs = np.zeros_like(self.ppv) # AC power of the battery system in W
         self.Pbat = np.zeros_like(self.ppv) # DC power of the battery in W
         self.soc = np.zeros_like(self.ppv) # State of charge of the battery
         self.dt = 1 # Time increment in s
@@ -230,6 +239,7 @@ class BatModAC(object):
         self.soc0 = 0 # State of charge of the battery in the first time step
 
         # DC power output of the PV generator
+        '''
         if pvmod: # ppv: Normalized DC power output of the PV generator in kW/kWp
             self.Ppv = np.minimum(self.ppv * self.parameter['P_PV'], self.parameter['P_PV2AC_in']) * 1000
             
@@ -254,7 +264,7 @@ class BatModAC(object):
 
         # Residual power
         self.Pr = self.Ppvs - self.pl - self.Pperi
-
+        '''
         ## 3.3 Simulation of the battery system
         self.Pbat, self.Pbs, self.soc, self.soc0 = tools.run_loss_AC(self.parameter['E_BAT'], self.parameter['eta_BAT'], self.parameter['t_CONSTANT'], self.parameter['P_SYS_SOC0_DC'], self.parameter['P_SYS_SOC0_AC'], self.parameter['P_SYS_SOC1_DC'], self.parameter['P_SYS_SOC1_AC'], self.parameter['AC2BAT_a_in'], self.parameter['AC2BAT_b_in'], self.parameter['AC2BAT_c_in'], self.parameter['BAT2AC_a_out'], self.parameter['BAT2AC_b_out'], self.parameter['BAT2AC_c_out'], self.parameter['P_AC2BAT_DEV'], self.parameter['P_BAT2AC_DEV'], self.parameter['P_BAT2AC_out'], self.parameter['P_AC2BAT_in'], round(self.parameter['t_DEAD']) , self.parameter['SOC_h'], self.dt, self.th, self.soc0, int(self.ppv.size), self.soc, self.Pr, self.Pbs, self.Pbat)
 
@@ -356,3 +366,34 @@ class BatModPV(object):
     def bat_mod_res(self):
        self.E = tools.bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat, self.Ppv2ac, self.Ppv2bat, self.Ppvbs, self.Pperi)
 
+def max_self_consumption(parameter, ppv, pl, pvmod):
+    # Preallocation
+    Pbs = np.zeros_like(ppv) # AC power of the battery system in W
+
+    # DC power output of the PV generator
+    if pvmod: # ppv: Normalized DC power output of the PV generator in kW/kWp
+        Ppv = np.minimum(ppv * parameter['P_PV'], parameter['P_PV2AC_in']) * 1000
+        
+    else: # ppv: DC power output of the PV generator in W
+        Ppv = np.minimum(ppv, parameter['P_PV2AC_in'] * 1000)
+
+    # Normalized input power of the PV inverter
+    ppvinvin = Ppv / parameter['P_PV2AC_in'] / 1000
+
+    # AC power output of the PV inverter taking into account the conversion losses and maximum
+    # output power of the PV inverter
+    Ppvs = np.minimum(np.maximum(0, Ppv-(parameter['PV2AC_a_in'] * ppvinvin * ppvinvin + parameter['PV2AC_b_in'] * ppvinvin + parameter['PV2AC_c_in'])), parameter['P_PV2AC_out'] * 1000) 
+
+    ## 3.2 Residual power
+
+    # Additional power consumption of other system components (e.g. AC power meter) in W
+    Pperi = np.ones_like(ppv) * parameter['P_PERI_AC']
+
+    # Adding the standby consumption of the PV inverter in times without any AC power output of the PV system 
+    # to the additional power consumption
+    Pperi[Ppvs == 0] += parameter['P_PVINV_AC'] 
+
+    # Residual power
+    Pr = Ppvs - pl - Pperi
+
+    return Pr, Pbs, Ppv, Ppvs, Pperi
