@@ -22,6 +22,7 @@ class Controller(object):
         # Load data from reference cases
         parameter, pl = self.load_ref_case(parameter, fmat, fparameter, ref_case)
 
+        # Call model for AC coupled systems
         if parameter['Top'] == 'AC':
             Pr, Pbs, Ppv, Ppvs, Pperi = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
             self.model = model.BatModAC(parameter, ppv, pl, Pr, Pbs, Ppv, Ppvs, Pperi)
