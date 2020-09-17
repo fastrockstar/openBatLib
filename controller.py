@@ -4,7 +4,7 @@ import view
 import tools
 
 class Controller(object):
-    """Class to manage the models
+    """Class to manage the models and view components
 
     :param object: object
     :type object: object
