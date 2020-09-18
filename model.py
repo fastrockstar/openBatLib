@@ -52,6 +52,7 @@ class BatModDC(object):
                
     def bat_mod_res(self):
         self.E = tools.bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat, self.Ppv2ac, self.Ppv2bat, self.Ppvbs, self.Pperi)
+        
 class BatModAC(object):
     """Performance Simulation Model for AC-coupled PV-Battery systems
 
