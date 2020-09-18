@@ -19,7 +19,7 @@ class Controller(object):
         # Load PV generator input
         ppv = tools.load_mat(fmat, 'ppv')
 
-        # Load data from reference cases
+        # Load data from reference cases (load and inverter parameters)
         parameter, pl = self.load_ref_case(parameter, fmat, fparameter, ref_case)
 
         # Call model for AC coupled systems
@@ -27,6 +27,11 @@ class Controller(object):
             Pr, Pbs, Ppv, Ppvs, Pperi = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
             self.model = model.BatModAC(parameter, ppv, pl, Pr, Pbs, Ppv, Ppvs, Pperi)
         
+        # Call model for DC coupled systems
+        elif parameter['Top'] == 'DC':
+            Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
+            self.model = model.BatModDC(parameter, ppv, pl, Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out)
+
         self.view = view.View()
     
     def load_ref_case(self, parameter, fmat, fparameter, ref_case):
