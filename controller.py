@@ -31,6 +31,11 @@ class Controller(object):
         elif parameter['Top'] == 'DC':
             Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out = model.max_self_consumption(parameter, ppv, pl, pvmod=True, max=True)
             self.model = model.BatModDC(parameter, ppv, pl, Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out)
+        
+        # Call model for PV-coupled systems
+        elif parameter['Top'] == 'PV':
+            Pac, Ppv, Pperi = model.max_self_consumption(parameter, ppv, pl,pvmod=True, max=True)
+            self.model = model.BatModPV(parameter, ppv, pl, Pac, Ppv, Pperi)
 
         self.view = view.View()
     

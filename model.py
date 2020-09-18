@@ -102,17 +102,24 @@ class BatModPV(object):
     """
     _version = '0.1'
 
-    def __init__(self, fparameter, fmat, system, ref_case, losses=False):
+    def __init__(self, parameter, ppv, pl, Pac, Ppv, Pperi):
+        self.parameter =  parameter
+        self.ppv = ppv
+        self.pl = pl 
+        self.Pac = Pac
+        self.Ppv = Ppv
+        self.Pperi = Pperi
+        '''
         self.load_sys_parameter(fparameter, system)
         self.ppv = self.load_input(fmat, 'ppv')
         
         if ref_case == '1' and self.parameter['ref_1'] or ref_case == '2' and self.parameter['ref_2']:
             self.load_ref_case(fparameter, ref_case, fmat)
-          
-        self.simulation_loss()
+        '''  
+        self.simulation()
         
         self.bat_mod_res()
-
+    '''
     def load_input(self, fname, name):
         """Loads power time series
 
@@ -122,7 +129,8 @@ class BatModPV(object):
         :type name: string
         """
         return tools.load_mat(fname, name)
-
+    '''
+    '''
     def load_ref_case(self, fparameter, ref_case, fmat):
             
         if ref_case == '1':
@@ -149,12 +157,13 @@ class BatModPV(object):
         self.parameter['PV2AC_c_out'] = self.inverter_parameter['PV2AC_c_out']
     
         self.parameter['P_SYS_SOC0_AC'] = self.inverter_parameter['P_PVINV_AC']
-
+    '''
+    '''
     def load_sys_parameter(self, fparameter, system):
         self.parameter = tools.load_parameter(fparameter, system)
         self.parameter = tools.eta2abc(self.parameter)
-
-    def simulation_loss(self, pvmod=True):
+    '''
+    def simulation(self, pvmod=True):
         ## PerModAC: Performance Simulation Model for PV-coupled PV-Battery Systems
 
         # Preallocation
@@ -164,20 +173,20 @@ class BatModPV(object):
         self.Ppv2bat_in = np.zeros_like(self.ppv) # Input power of the PV2BAT conversion pathway in W
         self.Pbat2pv_out = np.zeros_like(self.ppv) # Output power of the BAT2PV conversion pathway in W
         self.Ppvbs = np.zeros_like(self.ppv) # AC power of the PV-battery system in W
-        self.Pperi = np.ones_like(self.ppv) * self.parameter['P_PERI_AC'] # Additional power consumption of other system components (e.g. AC power meter) in W
+        #self.Pperi = np.ones_like(self.ppv) * self.parameter['P_PERI_AC'] # Additional power consumption of other system components (e.g. AC power meter) in W
         self.dt = 1 # Time increment in s
         self.th = 0 # Start threshold for the recharging of the battery
-        self.soc0 = 0 # State of charge of the battery in the first time step
-
+        self.soc0 = 0 # Initial state of charge of the battery in the first time step
+        '''
         # DC power output of the PV generator
         if pvmod: # ppv: Normalized DC power output of the PV generator in kW/kWp
             self.Ppv = self.ppv * self.parameter['P_PV'] * 1000
             
         else: # ppv: DC power output of the PV generator in W
             self.Ppv = self.ppv
-
+        '''
         # Power demand on the AC side
-        self.Pac = self.pl + self.Pperi
+        #self.Pac = self.pl + self.Pperi
 
         ## Simulation of the battery system
         self.soc, self.soc0, self.Ppv, self.Ppvbs, self.Pbat, self.Ppv2ac_out, self.Pbat2pv_out, self.Ppv2bat_in = tools.run_loss_PV(self.parameter['E_BAT'], self.parameter['P_PV2AC_in'], self.parameter['P_PV2AC_out'], self.parameter['P_PV2BAT_in'], self.parameter['P_BAT2PV_out'], self.parameter['PV2AC_a_in'], self.parameter['PV2AC_b_in'], self.parameter['PV2AC_c_in'], self.parameter['PV2BAT_a_in'], self.parameter['PV2BAT_b_in'], self.parameter['PV2BAT_c_in'], self.parameter['PV2AC_a_out'], self.parameter['PV2AC_b_out'], self.parameter['PV2AC_c_out'], self.parameter['BAT2PV_a_out'], self.parameter['BAT2PV_b_out'], self.parameter['BAT2PV_c_out'], self.parameter['eta_BAT'], self.parameter['SOC_h'], self.parameter['P_PV2BAT_DEV'], self.parameter['P_BAT2AC_DEV'], self.parameter['P_SYS_SOC1_DC'], self.parameter['P_SYS_SOC0_AC'], self.parameter['P_SYS_SOC0_DC'], int(self.ppv.size), self.soc0, self.Pac, self.Ppv, self.Ppv2bat_in, self.Ppv2ac_out, self.Pbat2pv_out, self.Ppvbs, self.Pbat, self.soc, self.dt, self.th, self.parameter['t_DEAD'], self.parameter['t_CONSTANT'])
@@ -264,3 +273,30 @@ def max_self_consumption(parameter, ppv, pl, pvmod=True, max=True):
         Pr = Ppv2ac_out - Pac
 
         return Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out
+
+    elif parameter['Top'] == 'PV':
+        # Preallocation
+        #Pbat = np.zeros_like(ppv) # DC power of the battery in W
+        #soc = np.zeros_like(ppv) # State of charge of the battery
+        #Ppv2ac_out = np.zeros_like(ppv) # Output power of the PV2AC conversion pathway in W
+        #Ppv2bat_in = np.zeros_like(ppv) # Input power of the PV2BAT conversion pathway in W
+        #Pbat2pv_out = np.zeros_like(ppv) # Output power of the BAT2PV conversion pathway in W
+        #Ppvbs = np.zeros_like(ppv) # AC power of the PV-battery system in W
+        Ppv = np.empty_like(ppv) # DC power output of the PV generator
+        Pperi = np.ones_like(ppv) * parameter['P_PERI_AC'] # Additional power consumption of other system components (e.g. AC power meter) in W
+        #dt = 1 # Time increment in s
+        #th = 0 # Start threshold for the recharging of the battery
+        #soc0 = 0 # State of charge of the battery in the first time step
+
+        # DC power output of the PV generator
+        if pvmod: # ppv: Normalized DC power output of the PV generator in kW/kWp
+            Ppv = ppv * parameter['P_PV'] * 1000
+            
+        else: # ppv: DC power output of the PV generator in W
+            Ppv = ppv
+
+        # Power demand on the AC side
+        Pac = pl + Pperi
+
+        return Pac, Ppv, Pperi
+
