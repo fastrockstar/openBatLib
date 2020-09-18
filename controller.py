@@ -24,12 +24,12 @@ class Controller(object):
 
         # Call model for AC coupled systems
         if parameter['Top'] == 'AC':
-            Pr, Pbs, Ppv, Ppvs, Pperi = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
+            Pr, Pbs, Ppv, Ppvs, Pperi = model.max_self_consumption(parameter, ppv, pl, pvmod=True, max=True)
             self.model = model.BatModAC(parameter, ppv, pl, Pr, Pbs, Ppv, Ppvs, Pperi)
         
         # Call model for DC coupled systems
         elif parameter['Top'] == 'DC':
-            Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
+            Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out = model.max_self_consumption(parameter, ppv, pl, pvmod=True, max=True)
             self.model = model.BatModDC(parameter, ppv, pl, Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out)
 
         self.view = view.View()

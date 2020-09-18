@@ -495,7 +495,7 @@ def run_loss_AC(_E_BAT, _eta_BAT, _t_CONSTANT, _P_SYS_SOC0_DC, _P_SYS_SOC0_AC, _
     _ftde = 1 - np.exp(-_dt / _t_CONSTANT) # Factor of the first-order time delay element
     _tstart = np.maximum(2, 1 + _t_DEAD) # First time step with regard to the dead time of the system control
 
-    _E_BAT *= 1000 # Conversion from W to kW
+    _E_BAT *= 1000 # Capacity of the battery, conversion from W to kW
 
     _eta_BAT /= 100
     
@@ -847,9 +847,6 @@ def bat_res_mod(_parameter, _Pl, _Ppv, _Pbat, *args):
         _Pg2ac = _Pg2l - _Pg2bs
         # Feed-in power to the grid
         _Pac2g = _Ppvs2g - _Pbs2g
-        #print(np.mean(_Ppvs2g))
-        #print(np.mean(_Pbs2g))
-        #print(np.mean(_Pac2g))
         # Grid power
         _Pg = _Pac2g + _Pg2ac
         # Curtailed PV power (AC output power)
@@ -868,7 +865,7 @@ def bat_res_mod(_parameter, _Pl, _Ppv, _Pbat, *args):
             _ppvinvout = _Ppvs[_tct] / _parameter['P_PV2AC_out'] / 1000
             # DC output power of the PV generator taking into account the
             # conversion and curtailment losses
-            _Ppv[_tct] = _Ppvs[_tct] + (_parameter['PV2AC_a_out'] * _ppvinvout **2 + _parameter['PV2AC_b_out'] * _ppvinvout + _parameter['PV2AC_c_out'])           
+            _Ppv[_tct] = _Ppvs[_tct] + (_parameter['PV2AC_a_out'] * _ppvinvout**2 + _parameter['PV2AC_b_out'] * _ppvinvout + _parameter['PV2AC_c_out'])           
 
     elif _parameter['Top'] == 'DC' or _parameter['Top'] == 'PV': # DC- and PV-coupled systems
         

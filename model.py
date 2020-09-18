@@ -52,7 +52,7 @@ class BatModDC(object):
                
     def bat_mod_res(self):
         self.E = tools.bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat, self.Ppv2ac, self.Ppv2bat, self.Ppvbs, self.Pperi)
-        
+
 class BatModAC(object):
     """Performance Simulation Model for AC-coupled PV-Battery systems
 
@@ -189,7 +189,7 @@ class BatModPV(object):
     def bat_mod_res(self):
        self.E = tools.bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat, self.Ppv2ac, self.Ppv2bat, self.Ppvbs, self.Pperi)
 
-def max_self_consumption(parameter, ppv, pl, pvmod):
+def max_self_consumption(parameter, ppv, pl, pvmod=True, max=True):
 
     # Maximize self consumption for AC-coupled systems
     if parameter['Top'] == 'AC':
@@ -249,17 +249,17 @@ def max_self_consumption(parameter, ppv, pl, pvmod):
         ppv2ac = np.minimum(Pac, parameter['P_PV2AC_out'] * 1000) / parameter['P_PV2AC_out'] / 1000
 
         # Target DC input power of the PV2AC conversion pathway
-        Ppv2ac_in_ac = np.minimum(Pac, parameter['P_PV2AC_out'] * 1000) + (parameter['PV2AC_a_out'] * ppv2ac ** 2 + parameter['PV2AC_b_out'] * ppv2ac + parameter['PV2AC_c_out'])
+        Ppv2ac_in_ac = np.minimum(Pac, parameter['P_PV2AC_out'] * 1000) + (parameter['PV2AC_a_out'] * ppv2ac**2 + parameter['PV2AC_b_out'] * ppv2ac + parameter['PV2AC_c_out'])
 
         # Normalized DC input power of the PV2AC conversion pathway TODO 1
         ppv2ac = Ppv / parameter['P_PV2AC_in'] / 1000
         
         # Target AC output power of the PV2AC conversion pathway
-        Ppv2ac_out = np.maximum(0, Ppv - (parameter['PV2AC_a_in'] * ppv2ac ** 2 + parameter['PV2AC_b_in'] * ppv2ac + parameter['PV2AC_c_in'])) 
+        Ppv2ac_out = np.maximum(0, Ppv - (parameter['PV2AC_a_in'] * ppv2ac**2 + parameter['PV2AC_b_in'] * ppv2ac + parameter['PV2AC_c_in'])) 
         
         # Residual power for battery charging
         Prpv = Ppv - Ppv2ac_in_ac
-        
+    
         # Residual power for battery discharging
         Pr = Ppv2ac_out - Pac
 
