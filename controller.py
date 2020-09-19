@@ -11,7 +11,15 @@ class Controller(object):
     """
     _version = '0.1'
 
-    def __init__(self, fmat, fparameter, system, ref_case):
+    def __init__(self, fmat, fparameter, system, ref_case, dt='1sec'):
+        
+        # Resample input data for time steps > 1 sec
+        if dt != '1sec':
+            t = int(''.join(filter(lambda i: i.isdigit(), dt)))
+            unit = ''.join(filter(lambda i: i.isalpha(), dt))
+            ppv = model.resample_input(t, unit, fmat)
+            pl = model.resample_input(t, unit, fmat)
+
         # Load system parameters
         parameter = tools.load_parameter(fparameter, system)
         parameter = tools.eta2abc(parameter)

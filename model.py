@@ -300,3 +300,13 @@ def max_self_consumption(parameter, ppv, pl, pvmod=True, max=True):
 
         return Pac, Ppv, Pperi
 
+def resample_input(t, unit, input):
+    if unit == 'sec':
+        output = np.repeat(input, t)    
+        output /= t
+    
+    if unit == 'min':
+        output = np.repeat(input, 60*t)    
+        output /= 60*t
+
+    return output
