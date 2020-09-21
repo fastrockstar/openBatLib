@@ -110,5 +110,11 @@ class Controller(object):
         return parameter, pl
 
     def print_E(self):
-        E = self.model.read_E()
+        E = self.model.get_E()
         self.view.print_E(E)
+
+    def plot(self):
+        soc = self.model.get_soc()
+        Pbat = self.model.get_Pbat()
+        self.view.plot(soc)
+        self.view.plot(Pbat)

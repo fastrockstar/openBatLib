@@ -12,3 +12,5 @@ ref_case = '1'
 c = controller.Controller(mat, parameter, system, ref_case)
 
 c.print_E()
+
+c.plot()

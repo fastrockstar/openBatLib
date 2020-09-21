@@ -1,7 +1,10 @@
 import tools
 import numpy as np
 import numba as nb
+import pandas as pd
 import time
+from pyModbusTCP.client import ModbusClient
+from pyModbusTCP  import utils
 
 class BatModDC(object):
     """Performance Simulation Model for DC-coupled PV-Battery systems
@@ -53,8 +56,20 @@ class BatModDC(object):
     def bat_mod_res(self):
         self.E = tools.bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat, self.Ppv2ac, self.Ppv2bat, self.Ppvbs, self.Pperi)
 
-    def read_E(self):
+    def get_E(self):
         return self.E
+
+    def get_soc(self):
+        '''
+        idx = pd.date_range(start='00:00:00', periods=len(self.soc), freq='S')
+        _soc = pd.Series(self.soc, index=idx)
+        soc_1h = _soc.resample('1h').sum()
+        soc_1h = soc_1h.to_numpy()
+        '''
+        return self.soc
+
+    def get_Pbat(self):
+        return self.Pbat
 
 class BatModAC(object):
     """Performance Simulation Model for AC-coupled PV-Battery systems
@@ -97,8 +112,20 @@ class BatModAC(object):
     def bat_mod_res(self):
         self.E = tools.bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat, self.Ppvs, self.Pbs, self.Pperi) 
 
-    def read_E(self):
+    def get_E(self):
         return self.E
+
+    def get_soc(self):
+        '''
+        idx = pd.date_range(start='00:00:00', periods=len(self.soc), freq='S')
+        _soc = pd.Series(self.soc, index=idx)
+        soc_1h = _soc.resample('1h').sum()
+        soc_1h = soc_1h.to_numpy()
+        '''
+        return self.soc
+
+    def get_Pbat(self):
+        return self.Pbat
 
 class BatModPV(object):
     """Performance Simulation Model for PV-coupled PV-Battery systems
@@ -204,6 +231,64 @@ class BatModPV(object):
     def bat_mod_res(self):
        self.E = tools.bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat, self.Ppv2ac, self.Ppv2bat, self.Ppvbs, self.Pperi)
 
+    def get_E(self):
+        return self.E
+
+    def get_soc(self):
+        '''
+        idx = pd.date_range(start='00:00:00', periods=len(self.soc), freq='S')
+        _soc = pd.Series(self.soc, index=idx)
+        soc_1h = _soc.resample('1h').sum()
+        soc_1h = soc_1h.to_numpy()
+        '''
+        return self.soc
+
+    def get_Pbat(self):
+        return self.Pbat
+
+class ModBus(object):
+    """Establishes connection to a battery system via ModBus protocol
+
+    :param object: object
+    :type object: object
+    """
+    SERVER_HOST = "192.168.208.106"
+    SERVER_PORT = 1502
+
+    c = ModbusClient()
+    # uncomment this line to see debug message
+    #c.debug(True)
+    # define modbus server host, port
+    c.host(SERVER_HOST)
+    c.port(SERVER_PORT)
+    c.unit_id(71)
+
+    wert = 0
+
+    if not c.is_open():
+        if not c.open():
+            print("unable to connect to "+SERVER_HOST+":"+str(SERVER_PORT))
+
+    # Read the SOC of the battery zweite nummer ist der time out in sek
+    regs = c.read_holding_registers(210, 2)
+
+    regs[1], regs[0] = regs[0], regs[1]
+
+    if regs:
+    #zwei register in ein float 
+        zregs = utils.word_list_to_long(regs) 
+        
+        #float dekodieren
+    # for i in range(0,len(zregs)):
+        wert = utils.decode_ieee(*zregs)
+        print(wert)
+            
+    #close session
+    print(wert)
+    c.close()
+
+
+
 def max_self_consumption(parameter, ppv, pl, pvmod=True, max=True):
 
     # Maximize self consumption for AC-coupled systems
@@ -239,7 +324,7 @@ def max_self_consumption(parameter, ppv, pl, pvmod=True, max=True):
 
         return Pr, Pbs, Ppv, Ppvs, Pperi
     
-    # Maximize self consumption fpr DC-coupled systems
+    # Maximize self consumption for DC-coupled systems
     elif parameter['Top'] == 'DC':
         # Initialization and preallocation
         Ppv2ac_in_ac = np.zeros_like(ppv)
@@ -280,6 +365,7 @@ def max_self_consumption(parameter, ppv, pl, pvmod=True, max=True):
 
         return Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out
 
+    # Meximize self consumption for PV-coupled systems
     elif parameter['Top'] == 'PV':
         # Preallocation
         #Pbat = np.zeros_like(ppv) # DC power of the battery in W
