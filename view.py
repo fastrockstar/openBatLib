@@ -5,4 +5,9 @@ class View(object):
     :type object: object
     """
     _version = '0.1'
-    print('View loaded!')
+
+    @staticmethod
+    def print_E(dict):
+        print ("{:<10} {:<10}".format('Name','Wh'))
+        for name, value in dict.items():
+            print('{:<10} {:<10}'.format(name, round(value, 3)))

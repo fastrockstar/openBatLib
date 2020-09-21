@@ -53,6 +53,9 @@ class BatModDC(object):
     def bat_mod_res(self):
         self.E = tools.bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat, self.Ppv2ac, self.Ppv2bat, self.Ppvbs, self.Pperi)
 
+    def read_E(self):
+        return self.E
+
 class BatModAC(object):
     """Performance Simulation Model for AC-coupled PV-Battery systems
 
@@ -93,6 +96,9 @@ class BatModAC(object):
 
     def bat_mod_res(self):
         self.E = tools.bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat, self.Ppvs, self.Pbs, self.Pperi) 
+
+    def read_E(self):
+        return self.E
 
 class BatModPV(object):
     """Performance Simulation Model for PV-coupled PV-Battery systems
@@ -310,3 +316,5 @@ def resample_input(t, unit, input):
         output /= 60*t
 
     return output
+
+

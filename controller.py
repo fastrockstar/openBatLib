@@ -44,6 +44,7 @@ class Controller(object):
             Pac, Ppv, Pperi = model.max_self_consumption(parameter, ppv, pl,pvmod=True, max=True)
             self.model = model.BatModPV(parameter, ppv, pl, Pac, Ppv, Pperi)
 
+        # Load the view class
         self.view = view.View()
     
     def load_parameter(self, fparameter, system):
@@ -108,12 +109,6 @@ class Controller(object):
 
         return parameter, pl
 
-    def load_inverter(self, fname, inverter):
-        """Loads inverter parameter
-
-        :param fname: Path to file
-        :type fname: string
-        :param inverter: Inverter
-        :type load_inverter: string
-        """
-        pass
+    def print_E(self):
+        E = self.model.read_E()
+        self.view.print_E(E)
