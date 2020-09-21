@@ -13,22 +13,21 @@ class Controller(object):
 
     def __init__(self, fmat, fparameter, system, ref_case, dt='1sec'):
         
+        # Load system parameters
+        parameter = self.load_parameter(fparameter, system)
+        
+        # Load PV generator input
+        ppv = self.load_pv_input(fmat, 'ppv')
+
+        # Load data from reference cases (load and inverter parameters)
+        parameter, pl = self.load_ref_case(parameter, fmat, fparameter, ref_case)
+
         # Resample input data for time steps > 1 sec
         if dt != '1sec':
             t = int(''.join(filter(lambda i: i.isdigit(), dt)))
             unit = ''.join(filter(lambda i: i.isalpha(), dt))
-            ppv = model.resample_input(t, unit, fmat)
-            pl = model.resample_input(t, unit, fmat)
-
-        # Load system parameters
-        parameter = tools.load_parameter(fparameter, system)
-        parameter = tools.eta2abc(parameter)
-        
-        # Load PV generator input
-        ppv = tools.load_mat(fmat, 'ppv')
-
-        # Load data from reference cases (load and inverter parameters)
-        parameter, pl = self.load_ref_case(parameter, fmat, fparameter, ref_case)
+            ppv = model.resample_input(t, unit, ppv)
+            pl = model.resample_input(t, unit, pl)
 
         # Call model for AC coupled systems
         if parameter['Top'] == 'AC':
@@ -47,6 +46,31 @@ class Controller(object):
 
         self.view = view.View()
     
+    def load_parameter(self, fparameter, system):
+        """Loads system parameter
+
+        :param fparameter: Path to file
+        :type fparameter: string
+        :param system: Indicator for the system
+        :type system: string
+        """
+        parameter = tools.load_parameter(fparameter, system)
+        parameter = tools.eta2abc(parameter)
+
+        return parameter
+
+    def load_pv_input(self, fmat, name):
+        """Loads PV input data
+
+        :param fmat: Path to file
+        :type fmat: string
+        :param name: Name of the input series
+        :type name: string
+        """
+        ppv = tools.load_mat(fmat, name)
+
+        return ppv
+
     def load_ref_case(self, parameter, fmat, fparameter, ref_case):
             
         if ref_case == '1':
@@ -83,29 +107,6 @@ class Controller(object):
                 parameter['P_SYS_SOC0_AC'] = inverter_parameter['P_PVINV_AC']
 
         return parameter, pl
-
-    def load_input(self, fname, name):
-        """Loads time series
-
-        :param fname: Path to file
-        :type fname: string
-        :param name: Name of series
-        :type name: string
-        """
-        if name == 'ppv':
-            self.model.load_pv_input(fname)
-        if 'Pl' in name:
-            self.model.load_pl_input(fname, name)
-
-    def load_parameter(self, fname, system):
-        """Loads parameter
-
-        :param fname: Path to file
-        :type fname: string
-        :param col_name: Coloumn of system
-        :type col_name: string
-        """
-        pass
 
     def load_inverter(self, fname, inverter):
         """Loads inverter parameter
