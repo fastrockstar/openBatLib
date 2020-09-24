@@ -8,6 +8,7 @@ class Controller(object):
 
     :param object: object
     :type object: object
+    TODO: Die init überarbeiten, so dass zwischen batmod und modbus unterschieden werden kann
     """
     _version = '0.1'
 
