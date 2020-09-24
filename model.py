@@ -3,6 +3,7 @@ import numpy as np
 import numba as nb
 import pandas as pd
 import time
+import datetime
 from pyModbusTCP.client import ModbusClient
 from pyModbusTCP  import utils
 
@@ -254,37 +255,45 @@ class ModBus(object):
     """
     SERVER_HOST = "192.168.208.106"
     SERVER_PORT = 1502
+    UNIT_ID = 71
 
-    c = ModbusClient()
-    # uncomment this line to see debug message
-    #c.debug(True)
-    # define modbus server host, port
-    c.host(SERVER_HOST)
-    c.port(SERVER_PORT)
-    c.unit_id(71)
+    # Open ModBus connection
+    try:
+        c = ModbusClient(host=SERVER_HOST, port=SERVER_PORT, unit_id=UNIT_ID, auto_open=True, auto_close=True)
+    except ValueError:
+        print("Error with host or port params")
+    # Arrray for the setting values
+    set_val = np.array([-500, -1000, -1500, -2000])#, -2500, -3000, -2500, -2000, -1500, -1000])
+    #set_val = np.array([500, -500, 500, -500, 500, -500, 500, -500, 500, -500])
+    # Transform the array to fit the time duration
+    set_val = np.repeat(set_val, 60)
+    set_time = np.zeros(len(set_val), dtype='datetime64[ns]')
 
-    wert = 0
+    read_val = np.zeros(len(set_val))
+    read_time = np.zeros(len(set_val), dtype='datetime64[ns]')
 
-    if not c.is_open():
-        if not c.open():
-            print("unable to connect to "+SERVER_HOST+":"+str(SERVER_PORT))
-
-    # Read the SOC of the battery zweite nummer ist der time out in sek
-    regs = c.read_holding_registers(210, 2)
-
-    regs[1], regs[0] = regs[0], regs[1]
-
-    if regs:
-    #zwei register in ein float 
-        zregs = utils.word_list_to_long(regs) 
-        
-        #float dekodieren
-    # for i in range(0,len(zregs)):
-        wert = utils.decode_ieee(*zregs)
-        print(wert)
-            
-    #close session
-    print(wert)
+    i = 0
+    # Create time range for writing intervall
+    idx = pd.date_range(start=datetime.datetime.now(), periods=4*60, freq='S')
+    while i<len(idx):
+        if datetime.datetime.now().second == idx[i].second:
+            if set_val[i] < 0:
+                # Write value to register
+                c.write_single_register(1024, set_val[i] & 0xFFFF)
+            else:
+                # Write value to register
+                c.write_single_register(1024, set_val[i])
+            # Log writing time
+            set_time[i] = datetime.datetime.now()
+            # Read value from register
+            regs = c.read_holding_registers(172, 2)        
+            # Log reading time
+            read_time[i] = datetime.datetime.now()
+            # Load content of two registers into a single float value
+            zregs = utils.word_list_to_long(regs, big_endian=False)
+            # Decode float value
+            read_val[i] = utils.decode_ieee(*zregs)
+            i += 1
     c.close()
 
 
