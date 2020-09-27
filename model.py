@@ -246,7 +246,7 @@ class BatModPV(object):
 
     def get_Pbat(self):
         return self.Pbat
-
+'''
 class ModBus(object):
     """Establishes connection to a battery system via ModBus protocol
 
@@ -256,7 +256,8 @@ class ModBus(object):
     SERVER_HOST = "192.168.208.106"
     SERVER_PORT = 1502
     UNIT_ID = 71
-
+    def __intit__(self):
+        print('ModBus')
     # Open ModBus connection
     try:
         c = ModbusClient(host=SERVER_HOST, port=SERVER_PORT, unit_id=UNIT_ID, auto_open=True, auto_close=True)
@@ -295,7 +296,7 @@ class ModBus(object):
             read_val[i] = utils.decode_ieee(*zregs)
             i += 1
     c.close()
-
+'''
 
 
 def max_self_consumption(parameter, ppv, pl, pvmod=True, max=True):
