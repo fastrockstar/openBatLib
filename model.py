@@ -273,27 +273,35 @@ class ModBus(object):
     read_val = np.zeros(len(set_val))
     read_time = np.zeros(len(set_val), dtype='datetime64[ns]')
 
+    read_bat = np.ones(len(set_val1), dtype='int16')
+    read_time_bat = np.zeros(len(set_val1), dtype='datetime64[ns]')
+
     i = 0
-    # Create time range for writing intervall
-    idx = pd.date_range(start=datetime.datetime.now(), periods=4*60, freq='S')
+    idx = pd.date_range(start=datetime.datetime.now(), periods=21*60, freq='S')
     while i<len(idx):
         if datetime.datetime.now().second == idx[i].second:
-            if set_val[i] < 0:
+            if set_val1[i] < 0:
                 # Write value to register
-                c.write_single_register(1024, set_val[i] & 0xFFFF)
+                c.write_single_register(1024, set_val1[i] & 0xFFFF)
             else:
                 # Write value to register
-                c.write_single_register(1024, set_val[i])
+                c.write_single_register(1024, set_val1[i])
             # Log writing time
-            set_time[i] = datetime.datetime.now()
+            set_time1[i] = datetime.datetime.now()
             # Read value from register
-            regs = c.read_holding_registers(172, 2)        
-            # Log reading time
-            read_time[i] = datetime.datetime.now()
+            regs1 = c.read_holding_registers(172, 2)
+            read_time1[i] = datetime.datetime.now()
+            # Read value from register
+            regs2 = c.read_holding_registers(582, 1)
+            read_time_bat1[i] = datetime.datetime.now()
+                    
             # Load content of two registers into a single float value
-            zregs = utils.word_list_to_long(regs, big_endian=False)
-            # Decode float value
-            read_val[i] = utils.decode_ieee(*zregs)
+            zregs = utils.word_list_to_long(regs1, big_endian=False)
+            # Decode and store float value
+            read_val1[i] = utils.decode_ieee(*zregs) 
+            # Store value      
+            read_bat1[i] = np.int16(*regs2)
+            
             i += 1
     c.close()
 '''
