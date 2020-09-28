@@ -253,10 +253,12 @@ class ModBus(object):
     :param object: object
     :type object: object
     """
-    def __init__(self, server_host, server_port, unit_id):
-        self.host = server_host
-        self.port = server_port
+    def __init__(self, host, port, unit_id, set_val):
+        self.host = host
+        self.port = port
         self.unit_id = unit_id
+        self.set_val = set_val
+        print(self.set_val)
         self.open_connection()
     
     def open_connection(self):

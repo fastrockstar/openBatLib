@@ -48,11 +48,9 @@ class Controller(object):
         # Load the view class
         self.view = view.View()
     
-    def modbus(self, host, port, unit_id):
-        server_host = host
-        server_port = port
-        unit_id = unit_id
-        self.model = model.ModBus(server_host, server_port, unit_id)
+    def modbus(self, host, port, unit_id, input_val):
+        set_val = self._load_set_values(input_val)
+        self.model = model.ModBus(host, port, unit_id, set_val)
 
     def _load_parameter(self, fparameter, system):
         """Loads system parameter
@@ -78,6 +76,9 @@ class Controller(object):
         ppv = tools.load_mat(fmat, name)
 
         return ppv
+
+    def _load_set_values(self, fname):
+        return fname
 
     def _load_ref_case(self, parameter, fmat, fparameter, ref_case):
             

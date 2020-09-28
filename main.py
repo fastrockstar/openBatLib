@@ -15,13 +15,15 @@ SERVER_HOST = "192.168.208.106"
 SERVER_PORT = 1502
 UNIT_ID = 71
 
+input_val = 'Moin'
+
 #sim = controller.Controller()
 
 mod = controller.Controller()
 
 #sim.sim(fmat=mat, fparameter=parameter, system=system, ref_case=ref_case, dt='1sec',)
 
-mod.modbus(host=SERVER_HOST, port=SERVER_PORT, unit_id=UNIT_ID)
+mod.modbus(host=SERVER_HOST, port=SERVER_PORT, unit_id=UNIT_ID, input_val=input_val)
 
 #sim.print_E()
 
