@@ -12,16 +12,16 @@ class Controller(object):
     """
     _version = '0.1'
 
-    def __init__(self, fmat, fparameter, system, ref_case, dt='1sec'):
+    def sim(self, fmat, fparameter, system, ref_case, dt='1sec'):
         
         # Load system parameters
-        parameter = self.load_parameter(fparameter, system)
+        parameter = self._load_parameter(fparameter, system)
         
         # Load PV generator input
-        ppv = self.load_pv_input(fmat, 'ppv')
+        ppv = self._load_pv_input(fmat, 'ppv')
 
         # Load data from reference cases (load and inverter parameters)
-        parameter, pl = self.load_ref_case(parameter, fmat, fparameter, ref_case)
+        parameter, pl = self._load_ref_case(parameter, fmat, fparameter, ref_case)
 
         # Resample input data for time steps > 1 sec
         if dt != '1sec':
@@ -48,7 +48,13 @@ class Controller(object):
         # Load the view class
         self.view = view.View()
     
-    def load_parameter(self, fparameter, system):
+    def modbus(self, host, port, unit_id):
+        server_host = host
+        server_port = port
+        unit_id = unit_id
+        self.model = model.ModBus(server_host, server_port, unit_id)
+
+    def _load_parameter(self, fparameter, system):
         """Loads system parameter
 
         :param fparameter: Path to file
@@ -61,7 +67,7 @@ class Controller(object):
 
         return parameter
 
-    def load_pv_input(self, fmat, name):
+    def _load_pv_input(self, fmat, name):
         """Loads PV input data
 
         :param fmat: Path to file
@@ -73,7 +79,7 @@ class Controller(object):
 
         return ppv
 
-    def load_ref_case(self, parameter, fmat, fparameter, ref_case):
+    def _load_ref_case(self, parameter, fmat, fparameter, ref_case):
             
         if ref_case == '1':
             # Load parameters of first inverter

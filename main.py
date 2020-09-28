@@ -11,8 +11,18 @@ parameter = r'/Users/kairosken/Documents/Bachelorarbeit/PerMod 2.1/PerModPAR.xls
 system = 'H'
 ref_case = '1'
 
-c = controller.Controller(mat, parameter, system, ref_case)
+SERVER_HOST = "192.168.208.106"
+SERVER_PORT = 1502
+UNIT_ID = 71
 
-c.print_E()
+#sim = controller.Controller()
 
-c.plot()
+mod = controller.Controller()
+
+#sim.sim(fmat=mat, fparameter=parameter, system=system, ref_case=ref_case, dt='1sec',)
+
+mod.modbus(host=SERVER_HOST, port=SERVER_PORT, unit_id=UNIT_ID)
+
+#sim.print_E()
+
+#sim.plot()

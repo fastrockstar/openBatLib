@@ -246,66 +246,67 @@ class BatModPV(object):
 
     def get_Pbat(self):
         return self.Pbat
-'''
+
 class ModBus(object):
     """Establishes connection to a battery system via ModBus protocol
 
     :param object: object
     :type object: object
     """
-    SERVER_HOST = "192.168.208.106"
-    SERVER_PORT = 1502
-    UNIT_ID = 71
-    def __intit__(self):
-        print('ModBus')
+    def __init__(self, server_host, server_port, unit_id):
+        self.host = server_host
+        self.port = server_port
+        self.unit_id = unit_id
+        self.open_connection()
+    
+    def open_connection(self):
+
     # Open ModBus connection
-    try:
-        c = ModbusClient(host=SERVER_HOST, port=SERVER_PORT, unit_id=UNIT_ID, auto_open=True, auto_close=True)
-    except ValueError:
-        print("Error with host or port params")
-    # Arrray for the setting values
-    set_val = np.array([-500, -1000, -1500, -2000])#, -2500, -3000, -2500, -2000, -1500, -1000])
-    #set_val = np.array([500, -500, 500, -500, 500, -500, 500, -500, 500, -500])
-    # Transform the array to fit the time duration
-    set_val = np.repeat(set_val, 60)
-    set_time = np.zeros(len(set_val), dtype='datetime64[ns]')
+        try:
+            c = ModbusClient(host=self.host, port=self.port, unit_id=self.unit_id, auto_open=True, auto_close=True)
+        except ValueError:
+            print("Error with host {}, port {} or unit-ID params".format(self.host, self.port, self.unit_id))
+        # Arrray for the setting values
+        set_val = np.array([-500, -1000, -1500, -2000])#, -2500, -3000, -2500, -2000, -1500, -1000])
+        #set_val = np.array([500, -500, 500, -500, 500, -500, 500, -500, 500, -500])
+        # Transform the array to fit the time duration
+        set_val = np.repeat(set_val, 60)
+        set_time = np.zeros(len(set_val), dtype='datetime64[ns]')
 
-    read_val = np.zeros(len(set_val))
-    read_time = np.zeros(len(set_val), dtype='datetime64[ns]')
+        read_val = np.zeros(len(set_val))
+        read_time = np.zeros(len(set_val), dtype='datetime64[ns]')
 
-    read_bat = np.ones(len(set_val1), dtype='int16')
-    read_time_bat = np.zeros(len(set_val1), dtype='datetime64[ns]')
+        read_bat = np.ones(len(set_val1), dtype='int16')
+        read_time_bat = np.zeros(len(set_val1), dtype='datetime64[ns]')
 
-    i = 0
-    idx = pd.date_range(start=datetime.datetime.now(), periods=21*60, freq='S')
-    while i<len(idx):
-        if datetime.datetime.now().second == idx[i].second:
-            if set_val1[i] < 0:
-                # Write value to register
-                c.write_single_register(1024, set_val1[i] & 0xFFFF)
-            else:
-                # Write value to register
-                c.write_single_register(1024, set_val1[i])
-            # Log writing time
-            set_time1[i] = datetime.datetime.now()
-            # Read value from register
-            regs1 = c.read_holding_registers(172, 2)
-            read_time1[i] = datetime.datetime.now()
-            # Read value from register
-            regs2 = c.read_holding_registers(582, 1)
-            read_time_bat1[i] = datetime.datetime.now()
-                    
-            # Load content of two registers into a single float value
-            zregs = utils.word_list_to_long(regs1, big_endian=False)
-            # Decode and store float value
-            read_val1[i] = utils.decode_ieee(*zregs) 
-            # Store value      
-            read_bat1[i] = np.int16(*regs2)
-            
-            i += 1
-    c.close()
-'''
-
+        i = 0
+        idx = pd.date_range(start=datetime.datetime.now(), periods=21*60, freq='S')
+        while i<len(idx):
+            if datetime.datetime.now().second == idx[i].second:
+                if set_val1[i] < 0:
+                    # Write value to register
+                    c.write_single_register(1024, set_val1[i] & 0xFFFF)
+                else:
+                    # Write value to register
+                    c.write_single_register(1024, set_val1[i])
+                # Log writing time
+                set_time1[i] = datetime.datetime.now()
+                # Read value from register
+                regs1 = c.read_holding_registers(172, 2)
+                read_time1[i] = datetime.datetime.now()
+                # Read value from register
+                regs2 = c.read_holding_registers(582, 1)
+                read_time_bat1[i] = datetime.datetime.now()
+                        
+                # Load content of two registers into a single float value
+                zregs = utils.word_list_to_long(regs1, big_endian=False)
+                # Decode and store float value
+                read_val1[i] = utils.decode_ieee(*zregs) 
+                # Store value      
+                read_bat1[i] = np.int16(*regs2)
+                
+                i += 1
+        c.close()
 
 def max_self_consumption(parameter, ppv, pl, pvmod=True, max=True):
 
