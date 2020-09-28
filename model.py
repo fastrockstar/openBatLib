@@ -423,5 +423,3 @@ def resample_input(t, unit, input):
         output /= 60*t
 
     return output
-
-
