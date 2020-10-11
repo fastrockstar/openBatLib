@@ -481,10 +481,9 @@ def max_self_consumption(parameter, ppv, pl, pvmod=True, max=True):
 
 @nb.jit(nopython=True)
 def run_loss_AC_test(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
-    # Initialization of particular variables
+    # Loading of particular variables
     _P_AC2BAT_min = d[9] #_AC2BAT_c_in Minimum AC charging power
     _P_BAT2AC_min = d[12]#_BAT2AC_c_out Minimum AC discharging power
-
     _E_BAT = d[0]
     _eta_BAT = d[1]
     _t_CONSTANT = d[2]
