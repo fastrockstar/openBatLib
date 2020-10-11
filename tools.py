@@ -2,7 +2,7 @@
 Collection of functions used in BatMod
 TODO:
     BAT2PV conversion pathway polyfit mit P_BAT2AC_in?
-    Umwnadlung in MWh dt berücksichitgen
+    Umwnadlung in MWh dt berücksichitge
 """
 import scipy.io as sio
 import numpy as np
@@ -22,7 +22,7 @@ def load_mat(fname, name):
     # Loads content of the mat-file
     mat_contents = sio.loadmat(fname, squeeze_me=True)
     # extracts specific data
-    data = np.array(mat_contents[name])
+    data = np.array(mat_contents[name], dtype='float64')
     
     return data 
 
@@ -342,15 +342,46 @@ def run_loss_DC(_E_BAT, _P_PV2AC_in, _P_PV2AC_out, _P_PV2BAT_in, _P_BAT2AC_out, 
     _tde = _t_CONSTANT > 0 # Binary variable to activate the first-order time delay element
     _ftde = 1 - np.exp(-_dt / _t_CONSTANT) # Factor of the first-order time delay element
     _tstart = np.maximum(2, 1 + _t_DEAD) # First time step with regard to the dead time of the system control
-    
-    for t in range(_tstart - 1, _tend):
+    korr = 0.1
+
+    if _dt >= (3 * _t_CONSTANT):
+        _tstart = 1
+        T_DEAD = False
+    else:
+        T_DEAD = True
+
+    if _dt >= _t_DEAD + 3 * _t_CONSTANT:
+        SETTLING = False
+    else:
+        SETTLING = True
+
+
+    #for t in range(_tstart - 1, _tend):
+    for t in range(0, _tend):
         # Energy content of the battery in the previous time step
         E_b0 = _soc0 * _E_BAT
 
         # Residual power with regard to the dead time of the system control
-        P_rpv = _Prpv[t - _t_DEAD] 
-        P_r = _Pr[t - _t_DEAD]
+        
+        if T_DEAD:
+            P_rpv = _Prpv[t - _t_DEAD] 
+            P_r = _Pr[t - _t_DEAD]
 
+        else:
+            P_rpv = _Prpv[t] 
+            P_r = _Pr[t]
+
+        # Check if the battery holds enough unused capacity for charging or discharging
+        # Estimated amount of energy that is supplied to or discharged from the storage unit.
+        E_bs_rpv = P_rpv * _dt / 1000
+        E_bs_r = P_r * _dt / 1000
+        
+        if E_bs_rpv > 0 and E_bs_rpv > (_E_BAT - E_b0):
+            P_rpv = (_E_BAT - E_b0) / _dt
+        # wenn Laden, dann neue Ladeleistung inkl. Korrekturfaktor
+        elif E_bs_r < 0 and np.abs(E_bs_r) > (E_b0):
+            P_r = (E_b0) / _dt * (1-korr)
+        
         # Decision if the battery should be charged or discharged
         if P_rpv > 0 and _soc0 < 1 - _th * (1 - _SOC_h):
             '''
@@ -371,7 +402,8 @@ def run_loss_DC(_E_BAT, _P_PV2AC_in, _P_PV2AC_out, _P_PV2BAT_in, _P_BAT2AC_out, 
             
             # Adjust the charging power due to the settling time
             # (modeled by a first-order time delay element)
-            P_pv2bat_in = _tde * _Ppv2bat_in[(t-1)] + _tde * (P_pv2bat_in - _Ppv2bat_in[(t-1)]) * _ftde + P_pv2bat_in * (not _tde)
+            if SETTLING:
+                P_pv2bat_in = _tde * _Ppv2bat_in[(t-1)] + _tde * (P_pv2bat_in - _Ppv2bat_in[(t-1)]) * _ftde + P_pv2bat_in * (not _tde)
             
             # Limit the charging power to the current power output of the PV generator
             P_pv2bat_in = np.minimum(P_pv2bat_in, _Ppv[t])
@@ -411,7 +443,8 @@ def run_loss_DC(_E_BAT, _P_PV2AC_in, _P_PV2AC_out, _P_PV2BAT_in, _P_BAT2AC_out, 
             
             # Adjust the discharging power due to the settling time
             # (modeled by a first-order time delay element)
-            P_bat2ac_out = _tde * _Pbat2ac_out[t-1] + _tde * (P_bat2ac_out - _Pbat2ac_out[t-1]) * _ftde + P_bat2ac_out * (not _tde)
+            if SETTLING:
+                P_bat2ac_out = _tde * _Pbat2ac_out[t-1] + _tde * (P_bat2ac_out - _Pbat2ac_out[t-1]) * _ftde + P_bat2ac_out * (not _tde)
             
             # Limit the discharging power to the maximum AC power output of the PV-battery system
             P_bat2ac_out = np.minimum(_P_PV2AC_out - _Ppv2ac_out[t], P_bat2ac_out)
@@ -424,9 +457,9 @@ def run_loss_DC(_E_BAT, _P_PV2AC_in, _P_PV2AC_out, _P_PV2BAT_in, _P_BAT2AC_out, 
             # the PV generator, the idle losses of the BAT2AC conversion pathway
             # are not taken into account)
             if _Ppv[t] > _P_PV2AC_min:
-                P_bat= -1 * (P_bat2ac_out + (_BAT2AC_a_out * ppv2bat ** 2 + _BAT2AC_b_out * ppv2bat))
+                P_bat= -1 * (P_bat2ac_out + (_BAT2AC_a_out * ppv2bat**2 + _BAT2AC_b_out * ppv2bat))
             else:
-                P_bat = -1 * (P_bat2ac_out + (_BAT2AC_a_out * ppv2bat ** 2 + _BAT2AC_b_out * ppv2bat + _BAT2AC_c_out)) + _Ppv[t]
+                P_bat = -1 * (P_bat2ac_out + (_BAT2AC_a_out * ppv2bat**2 + _BAT2AC_b_out * ppv2bat + _BAT2AC_c_out)) + _Ppv[t]
             
                     
             # Realized AC power of the PV-battery system
@@ -489,18 +522,34 @@ def run_loss_AC(_E_BAT, _eta_BAT, _t_CONSTANT, _P_SYS_SOC0_DC, _P_SYS_SOC0_AC, _
     _P_AC2BAT_min = _AC2BAT_c_in # Minimum AC charging power
     _P_BAT2AC_min = _BAT2AC_c_out # Minimum AC discharging power
 
+    # Correction factor to avoid over charge and discharge the battery
+    corr = 0.1
+
     # Initialization of particular variables
     #_P_PV2AC_min = _parameter['PV2AC_c_in'] # Minimum input power of the PV2AC conversion pathway
     _tde = _t_CONSTANT > 0 # Binary variable to activate the first-order time delay element
     _ftde = 1 - np.exp(-_dt / _t_CONSTANT) # Factor of the first-order time delay element
+    # Kann and dieser Stelle auf einen Verschiebung von tstart um 2 verzichtet werden. Dann fängt t bei 0 an
+    # Was ,achen die Funktonen, die auf eine vorherigen STufe zugreifen?
     _tstart = np.maximum(2, 1 + _t_DEAD) # First time step with regard to the dead time of the system control
 
     _E_BAT *= 1000 # Capacity of the battery, conversion from W to kW
 
     _eta_BAT /= 100
     
-    # Ab hier beginnt die Schleife
-    # Start of the time step simulation
+    # Check if the dead time can be ignored
+    if _dt >= (3 * _t_CONSTANT):
+        _tstart = 1
+        T_DEAD = False
+    else:
+        T_DEAD = True
+
+    # CHeck if the settling time can be ignored
+    if _dt >= _t_DEAD + 3 * _t_CONSTANT:
+        SETTLING = False
+    else:
+        SETTLING = True
+    
     for t in range(_tstart - 1, _tend):
         
         # Energy content of the battery in the previous time step
@@ -508,7 +557,21 @@ def run_loss_AC(_E_BAT, _eta_BAT, _t_CONSTANT, _P_SYS_SOC0_DC, _P_SYS_SOC0_AC, _
         
         # Calculate the AC power of the battery system from the residual power
         # with regard to the dead time of the system control
-        P_bs = _Pr[t - _t_DEAD]
+        # Einen vorherigen Wert für Pr mitliefern, wenn die Totzeit berücksichtigt werden soll
+        if T_DEAD:
+            P_bs = _Pr[t - _t_DEAD]
+        else:
+            P_bs = _Pr[t]
+        
+        # Check if the battery holds enough unused capacity for charging or discharging
+        # Estimated amount of energy in Ws that is supplied to or discharged from the storage unit.
+        E_bs_est = P_bs * _dt / 1000
+        
+        if E_bs_est > 0 and E_bs_est > (_E_BAT - E_b0):
+            P_bs = (_E_BAT - E_b0) / _dt
+        # When charging take the correction factor into account
+        elif E_bs_est < 0 and np.abs(E_bs_est) > (E_b0):
+            P_bs = (E_b0) / _dt * (1-corr)
         
         # Adjust the AC power of the battery system due to the stationary 
         # deviations taking the minimum charging and discharging power into
@@ -527,8 +590,10 @@ def run_loss_AC(_E_BAT, _eta_BAT, _t_CONSTANT, _P_SYS_SOC0_DC, _P_SYS_SOC0_AC, _
         P_bs = np.maximum(-_P_BAT2AC_out * 1000, np.minimum(_P_AC2BAT_in * 1000, P_bs))
 
         # Adjust the AC power of the battery system due to the settling time
-        # (modeled by a first-order time delay element)
-        P_bs = _tde * _Pbs[t-1] + _tde * (P_bs - _Pbs[t-1]) * _ftde + P_bs * (not _tde)
+        # (modeled by a first-order time delay element) Hier hat der Schritt vorher eine Null?
+        # Muss der vorherige Wert mit übergeben werden?
+        if SETTLING:
+            P_bs = _tde * _Pbs[t-1] + _tde * (P_bs - _Pbs[t-1]) * _ftde + P_bs * (not _tde)
         
         # Decision if the battery should be charged or discharged
         if P_bs > 0 and _soc0 < 1 - _th * (1 - _SOC_h):
@@ -785,7 +850,7 @@ def run_loss_PV(_E_BAT, _P_PV2AC_in, _P_PV2AC_out, _P_PV2BAT_in, _P_BAT2PV_out, 
 
     return _soc, _soc0, _Ppv, _Ppvbs, _Pbat, _Ppv2ac_out, _Pbat2pv_out, _Ppv2bat_in
 
-def bat_res_mod(_parameter, _Pl, _Ppv, _Pbat, *args):
+def bat_res_mod(_parameter, _Pl, _Ppv, _Pbat, _dt, *args):
     '''
     TODO
     Bei der Umwandlung zu MWh dt brücksichtigen!
@@ -918,54 +983,54 @@ def bat_res_mod(_parameter, _Pl, _Ppv, _Pbat, *args):
     # All variables in MWh
         
     # Electrical demand including the energy consumption of the other system components
-    _E['El'] = np.sum(np.abs(_Plt)) / 3.6e9
+    _E['El'] = np.sum(np.abs(_Plt)) * _dt  / 3.6e9
     # DC output of the PV generator including curtailment
-    _E['Epv'] = np.sum(np.abs(_Ppv)) / 3.6e9
+    _E['Epv'] = np.sum(np.abs(_Ppv)) * _dt / 3.6e9
     # DC input of the battery (charged)
-    _E['Ebatin'] = np.sum(np.abs(_Pbatin)) / 3.6e9
+    _E['Ebatin'] = np.sum(np.abs(_Pbatin)) * _dt / 3.6e9
     # DC output of the battery (discharged)
-    _E['Ebatout'] = np.sum(np.abs(_Pbatout)) / 3.6e9
+    _E['Ebatout'] = np.sum(np.abs(_Pbatout)) * _dt / 3.6e9
     # Grid feed-in
-    _E['Eac2g'] = np.sum(np.abs(_Pac2g)) / 3.6e9
+    _E['Eac2g'] = np.sum(np.abs(_Pac2g)) * _dt / 3.6e9
     # Grid demand
-    _E['Eg2ac'] = np.sum(np.abs(_Pg2ac)) / 3.6e9
+    _E['Eg2ac'] = np.sum(np.abs(_Pg2ac)) * _dt / 3.6e9
     # Load supply by the grid
-    _E['Eg2l'] = np.sum(np.abs(_Pg2l)) / 3.6e9
+    _E['Eg2l'] = np.sum(np.abs(_Pg2l)) * _dt / 3.6e9
     # Demand of the other system components
-    _E['Eperi'] = np.sum(np.abs(_Pperi)) / 3.6e9
+    _E['Eperi'] = np.sum(np.abs(_Pperi)) * _dt / 3.6e9
     # Curtailed PV energy
-    _E['Ect'] = np.sum(np.abs(_Pct)) / 3.6e9
+    _E['Ect'] = np.sum(np.abs(_Pct)) * _dt / 3.6e9
     
     if _parameter['Top'] == 'AC': # AC-coupled systems
         
         # AC output of the PV system including curtailment
-        _E['Epvs'] = np.sum(np.abs(_Ppvs)) / 3.6e9
+        _E['Epvs'] = np.sum(np.abs(_Ppvs)) * _dt / 3.6e9
         # AC input of the battery system
-        _E['Eac2bs'] = np.sum(np.abs(_Pac2bs)) / 3.6e9
+        _E['Eac2bs'] = np.sum(np.abs(_Pac2bs)) * _dt / 3.6e9
         # AC output of the battery system
-        _E['Ebs2ac'] = np.sum(np.abs(_Pbs2ac)) / 3.6e9
+        _E['Ebs2ac'] = np.sum(np.abs(_Pbs2ac)) * _dt / 3.6e9
         # Direct use of PV energy
-        _E['Epvs2l'] = np.sum(np.abs(_Ppvs2l)) / 3.6e9
+        _E['Epvs2l'] = np.sum(np.abs(_Ppvs2l)) * _dt / 3.6e9
         # PV charging
-        _E['Epvs2bs'] = np.sum(np.abs(_Ppvs2bs)) / 3.6e9
+        _E['Epvs2bs'] = np.sum(np.abs(_Ppvs2bs)) * _dt / 3.6e9
         # Grid charging
-        _E['Eg2bs'] = np.sum(np.abs(_Pg2bs)) / 3.6e9
+        _E['Eg2bs'] = np.sum(np.abs(_Pg2bs)) * _dt / 3.6e9
         # PV feed-in
-        _E['Epvs2g'] = np.sum(np.abs(_Ppvs2g)) / 3.6e9
+        _E['Epvs2g'] = np.sum(np.abs(_Ppvs2g)) * _dt / 3.6e9
         # Load supply by the battery system
-        _E['Ebs2l'] = np.sum(np.abs(_Pbs2l)) / 3.6e9
+        _E['Ebs2l'] = np.sum(np.abs(_Pbs2l)) * _dt / 3.6e9
         # Battery feed-in
-        _E['Ebs2g'] = np.sum(np.abs(_Pbs2g)) / 3.6e9
+        _E['Ebs2g'] = np.sum(np.abs(_Pbs2g)) * _dt / 3.6e9
         
     elif _parameter['Top'] == 'DC' or _parameter['Top'] == 'PV': # DC- and PV-coupled systems
         
         # Grid demand of the PV-battery system
-        _E['Eg2pvbs'] = np.sum(np.abs(_Pg2pvbs)) / 3.6e9
+        _E['Eg2pvbs'] = np.sum(np.abs(_Pg2pvbs)) * _dt / 3.6e9
         # AC input of the PV-battery system
-        _E['Eac2pvbs'] = np.sum(np.abs(_Pac2pvbs)) / 3.6e9
+        _E['Eac2pvbs'] = np.sum(np.abs(_Pac2pvbs)) * _dt / 3.6e9
         # AC output of the PV-battery system
-        _E['Epvbs2ac'] = np.sum(np.abs(_Ppvbs2ac)) / 3.6e9
+        _E['Epvbs2ac'] = np.sum(np.abs(_Ppvbs2ac)) * _dt / 3.6e9
         # Load supply by the PV-battery system
-        _E['Epvbs2l'] = np.sum(np.abs(_Ppvbs2l)) / 3.6e9  
+        _E['Epvbs2l'] = np.sum(np.abs(_Ppvbs2l)) * _dt / 3.6e9  
     
     return _E        

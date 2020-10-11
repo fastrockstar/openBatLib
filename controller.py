@@ -1,3 +1,8 @@
+import pandas as pd
+from numba import types
+from numba.typed import Dict
+from numba import njit
+
 import model
 import view
 
@@ -12,7 +17,11 @@ class Controller(object):
     """
     _version = '0.1'
 
-    def sim(self, fmat, fparameter, system, ref_case, dt='1sec'):
+    def __init__(self):
+
+        self.view = view.View()
+
+    def sim(self, fmat, fparameter, system, ref_case, dt=1):
         
         # Load system parameters
         parameter = self._load_parameter(fparameter, system)
@@ -23,26 +32,35 @@ class Controller(object):
         # Load data from reference cases (load and inverter parameters)
         parameter, pl = self._load_ref_case(parameter, fmat, fparameter, ref_case)
 
-        # Resample input data for time steps > 1 sec
-        if dt != '1sec':
-            t = int(''.join(filter(lambda i: i.isdigit(), dt)))
-            unit = ''.join(filter(lambda i: i.isalpha(), dt))
-            ppv = model.resample_input(t, unit, ppv)
-            pl = model.resample_input(t, unit, pl)
+        #idx = pd.date_range(start='00:00:00', periods=len(ppv), freq='S')
+
+        #ppv = pd.Series(ppv, index=idx)
+
+        #pl = pd.Series(pl, index=idx)
+
+        #ppv = ppv.resample('15min').mean()
+
+        #ppv = ppv.to_numpy()
+
+        #pl = pl.resample('15min').mean()
+
+        #pl = pl.to_numpy()
 
         # Call model for AC coupled systems
         if parameter['Top'] == 'AC':
-            Pr, Pbs, Ppv, Ppvs, Pperi = model.max_self_consumption(parameter, ppv, pl, pvmod=True, max=True)
-            self.model = model.BatModAC(parameter, ppv, pl, Pr, Pbs, Ppv, Ppvs, Pperi)
+            Pr, Ppv, Ppvs, Pperi = model.max_self_consumption(parameter, ppv, pl, pvmod=True, max=True)
+            d = model.transform_dict_to_array(parameter)
+            self.model = model.BatModAC(parameter, d, ppv, pl, Pr, Ppv, Ppvs, Pperi, dt)
         
         # Call model for DC coupled systems
         elif parameter['Top'] == 'DC':
             Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out = model.max_self_consumption(parameter, ppv, pl, pvmod=True, max=True)
-            self.model = model.BatModDC(parameter, ppv, pl, Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out)
+            d = model.transform_dict_to_array(parameter)
+            self.model = model.BatModDC(parameter, d, ppv, pl, Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out, dt)
         
         # Call model for PV-coupled systems
         elif parameter['Top'] == 'PV':
-            Pac, Ppv, Pperi = model.max_self_consumption(parameter, ppv, pl,pvmod=True, max=True)
+            Pac, Ppv, Pperi = model.max_self_consumption(parameter, ppv, pl, pvmod=True, max=True)
             self.model = model.BatModPV(parameter, ppv, pl, Pac, Ppv, Pperi)
 
         # Load the view class
@@ -51,7 +69,26 @@ class Controller(object):
     def modbus(self, host, port, unit_id, input_val):
         set_val = self._load_set_values(input_val)
         self.model = model.ModBus(host, port, unit_id, set_val)
-
+    '''
+    Dieser Aufruf bekommt keine ppv sondern nur eine Pr etc.?
+    Benötigt man hier ein überhaupt die Last oder reicht eine Angabe der Residualleistung als Eingangsparameter aus?
+    Das übergeben von dt als Wert in Sekunden läuft. Kann hier ein DataFrame verwendet werden?
+    Das dt dann aus dem Index lesen klappt nicht beim ersten Aufruf. Das dt muss händisch gesezt werden, und die übrigen Werte werden dann in dem DataFrame als neue Zeile angehängt.
+    Dann wird immer der vorheriger Wert aus dem Data Frame geladen. Bei ersten Durchlauf kann ein Totzeitberücksichtig werden
+    Hier wird dann der Speicher nicht geladen und es wird eine Null geschrieben. So lange, bis man einen ehcten Wert auslesen kann?
+    '''
+    def real_time(self, parameter, **kwargs):
+        if parameter['Top'] == 'AC':
+            d = self._dict_to_array(parameter)
+            Pbat, Pbs, soc, soc0 = model.run_loss_AC_test(d, **kwargs)
+            return Pbat, Pbs, soc, soc0
+        elif type == 'DC':
+            d = self._dict_to_array(parameter)
+            Ppv2ac_out, Ppv2bat_in, Ppv2bat_in0, Pbat2ac_out, Pbat2ac_out0, Ppvbs, Pbat, soc, soc0 = model.run_loss_DC_test(d, **kwargs)
+            return Ppv2ac_out, Ppv2bat_in, Ppv2bat_in0, Pbat2ac_out, Pbat2ac_out0, Ppvbs, Pbat, soc, soc0
+        elif type == 'PV':
+            self.model = tools.run_loss_PV()
+    
     def _load_parameter(self, fparameter, system):
         """Loads system parameter
 
@@ -64,6 +101,14 @@ class Controller(object):
         parameter = tools.eta2abc(parameter)
 
         return parameter
+
+
+    def _dict_to_array(self, parameter):
+        d = model.transform_dict_to_array(parameter)
+        return d
+
+    def get_parameter(self, fparameter, system):
+        return self._load_parameter(fparameter, system)
 
     def _load_pv_input(self, fmat, name):
         """Loads PV input data
@@ -86,7 +131,7 @@ class Controller(object):
             # Load parameters of first inverter
             if parameter['Top'] == 'AC' or parameter['Top'] == 'PV':
                 inverter_parameter = tools.load_parameter(fparameter, 'L')            
-            parameter['P_PV'] = 5
+            parameter['P_PV'] = 5.0
             pl = tools.load_mat(fmat, 'Pl1')
                                         
         elif ref_case == '2':
@@ -121,8 +166,32 @@ class Controller(object):
         E = self.model.get_E()
         self.view.print_E(E)
 
+    def E_to_csv(self, name):
+        E = self.model.get_E()
+        self.view.E_to_csv(name, E)
+
     def plot(self):
         soc = self.model.get_soc()
         Pbat = self.model.get_Pbat()
         self.view.plot(soc)
         self.view.plot(Pbat)
+
+    def to_csv(self, name):
+        soc = self.model.get_soc()
+        E = self.model.get_E()
+        self.view.store_to_csv(name=name, data=E)
+
+    def dict_to_csv(self, name):
+        E = self.model.get_E()
+        self.view.store_dict_to_csv(name=name, data=E)
+
+    def to_pickle(self, fname , name):
+        if name == 'soc':
+            soc = self.model.get_soc()
+            self.view.store_to_pickle(fname=fname, data=soc)
+        if name == 'Pbat':
+            Pbat = self.model.get_Pbat()
+            self.view.store_to_pickle(fname=fname, data=Pbat)
+        if name == 'Pbs':
+            Pbs = self.model.get_Pbs()
+            self.view.store_to_pickle(fname=fname, data=Pbs)
