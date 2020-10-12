@@ -24,7 +24,8 @@ input_vals = np.array([1500.0, 2000.0, -500.0, -300.0, -1500.0, -2000.0, -2500.0
                        500.0, 300.0, -500.0, -300.0, 200.0, 300.0, -100.0, -1000.0, -1500.0, 500.0,
                        300.0, 430.0, -2000.0, -3500.0, 100.0, 500.0, 700.0, 800.0, 900.0, 1000.0])
 
-csv_file = '/Users/kairosken/Documents/Bachelorarbeit/Python/plenticore_Bl.csv'
+#csv_file = '/Users/kairosken/Documents/Bachelorarbeit/Python/plenticore_Bl.csv'
+csv_file = '/home/kai/Dokumente/openBatLib/Data/plenticore_Bl.csv'
 
 SERVER_HOST = "192.168.208.106"
 SERVER_PORT = 1502
