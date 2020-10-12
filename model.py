@@ -881,7 +881,6 @@ def run_loss_DC_test(d, _dt, _soc0, _soc, _Pr, _Prpv,  _Ppv, _Ppv2bat_in0, _Ppv2
 
     return _Ppv2ac_out, _Ppv2bat_in, _Ppv2bat_in0, _Pbat2ac_out, _Pbat2ac_out0, _Ppvbs, _Pbat, _soc, _soc0
 
-
 def transform_dict_to_array(parameter):
     # 
     if parameter['Top'] == 'AC':
