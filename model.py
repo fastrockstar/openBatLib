@@ -65,7 +65,7 @@ class BatModDC(object):
         self.Ppv2bat = self.Ppv2bat_in # DC input power of the PV2BAT conversion pathway
                
     def bat_mod_res(self):
-        self.E = tools.bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat, self.dt, self.Ppv2ac, self.Ppv2bat, self.Ppvbs, self.Pperi)
+        self.E = model.bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat, self.dt, self.Ppv2ac, self.Ppv2bat, self.Ppvbs, self.Pperi)
 
     def get_E(self):
         return self.E
@@ -141,7 +141,7 @@ class BatModAC(object):
         self.Pbat, self.Pbs, self.soc, self.soc0, self.Pbs0 = BatMod_AC(self.d, self.dt, self.soc0, self.soc, self.Pr, self.Pbs0, self.Pbs, self.Pbat)
 
     def bat_mod_res(self):
-        self.E = tools.bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat, self.dt, self.Ppvs, self.Pbs, self.Pperi) 
+        self.E = model.bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat, self.dt, self.Ppvs, self.Pbs, self.Pperi) 
 
     def get_E(self):
         return self.E
@@ -256,14 +256,14 @@ class BatModPV(object):
         #self.Pac = self.pl + self.Pperi
 
         ## Simulation of the battery system
-        self.soc, self.soc0, self.Ppv, self.Ppvbs, self.Pbat, self.Ppv2ac_out, self.Pbat2pv_out, self.Ppv2bat_in = tools.run_loss_PV(self.parameter['E_BAT'], self.parameter['P_PV2AC_in'], self.parameter['P_PV2AC_out'], self.parameter['P_PV2BAT_in'], self.parameter['P_BAT2PV_out'], self.parameter['PV2AC_a_in'], self.parameter['PV2AC_b_in'], self.parameter['PV2AC_c_in'], self.parameter['PV2BAT_a_in'], self.parameter['PV2BAT_b_in'], self.parameter['PV2BAT_c_in'], self.parameter['PV2AC_a_out'], self.parameter['PV2AC_b_out'], self.parameter['PV2AC_c_out'], self.parameter['BAT2PV_a_out'], self.parameter['BAT2PV_b_out'], self.parameter['BAT2PV_c_out'], self.parameter['eta_BAT'], self.parameter['SOC_h'], self.parameter['P_PV2BAT_DEV'], self.parameter['P_BAT2AC_DEV'], self.parameter['P_SYS_SOC1_DC'], self.parameter['P_SYS_SOC0_AC'], self.parameter['P_SYS_SOC0_DC'], int(self.ppv.size), self.soc0, self.Pac, self.Ppv, self.Ppv2bat_in, self.Ppv2ac_out, self.Pbat2pv_out, self.Ppvbs, self.Pbat, self.soc, self.dt, self.th, self.parameter['t_DEAD'], self.parameter['t_CONSTANT'])
+        self.soc, self.soc0, self.Ppv, self.Ppvbs, self.Pbat, self.Ppv2ac_out, self.Pbat2pv_out, self.Ppv2bat_in = model.BatMod_PV(self.parameter['E_BAT'], self.parameter['P_PV2AC_in'], self.parameter['P_PV2AC_out'], self.parameter['P_PV2BAT_in'], self.parameter['P_BAT2PV_out'], self.parameter['PV2AC_a_in'], self.parameter['PV2AC_b_in'], self.parameter['PV2AC_c_in'], self.parameter['PV2BAT_a_in'], self.parameter['PV2BAT_b_in'], self.parameter['PV2BAT_c_in'], self.parameter['PV2AC_a_out'], self.parameter['PV2AC_b_out'], self.parameter['PV2AC_c_out'], self.parameter['BAT2PV_a_out'], self.parameter['BAT2PV_b_out'], self.parameter['BAT2PV_c_out'], self.parameter['eta_BAT'], self.parameter['SOC_h'], self.parameter['P_PV2BAT_DEV'], self.parameter['P_BAT2AC_DEV'], self.parameter['P_SYS_SOC1_DC'], self.parameter['P_SYS_SOC0_AC'], self.parameter['P_SYS_SOC0_DC'], int(self.ppv.size), self.soc0, self.Pac, self.Ppv, self.Ppv2bat_in, self.Ppv2ac_out, self.Pbat2pv_out, self.Ppvbs, self.Pbat, self.soc, self.dt, self.th, self.parameter['t_DEAD'], self.parameter['t_CONSTANT'])
 
         # Define missing parameters
         self.Ppv2ac = self.Ppv2ac_out # AC output power of the PV2AC conversion pathway
         self.Ppv2bat = self.Ppv2bat_in # DC input power of the PV2BAT conversion pathway
 
     def bat_mod_res(self):
-       self.E = tools.bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat, self.Ppv2ac, self.Ppv2bat, self.Ppvbs, self.Pperi)
+       self.E = model.bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat, self.Ppv2ac, self.Ppv2bat, self.Ppvbs, self.Pperi)
 
     def get_E(self):
         return self.E
@@ -883,8 +883,374 @@ def BatMod_DC(d, _dt, _soc0, _soc, _Pr, _Prpv,  _Ppv, _Ppv2bat_in0, _Ppv2bat_in,
 
 @nb.jit(nopython=True)
 def BatMod_PV(d, dt, soc0, _soc):
-    # Parameter von Johannes Anfragen
-    pass
+    # Initialization of particular variables
+    P_PV2BAT_min = _PV2BAT_c_in # Minimum DC charging power
+    P_BAT2PV_min = _BAT2PV_c_out # Minimum DC discharging power
+
+    # Initialization of particular variables
+    _tde = _t_CONSTANT > 0 # Binary variable to activate the first-order time delay element
+    _ftde = 1 - np.exp(-_dt / _t_CONSTANT) # Factor of the first-order time delay element
+    _tstart = np.maximum(2, 1 + _t_DEAD) # First time step with regard to the dead time of the system control
+
+    _E_BAT *= 1000 # Conversion from W to kW
+
+    _eta_BAT /= 100
+    # Ab hier beginnt die Schleife
+    # Start of the time step simulation
+    for t in range(_tstart - 1, _tend):
+        
+        # Energy content of the battery in the previous time step
+        E_b0 = _soc0 * _E_BAT
+
+        # Target AC output power of the PV-battery system to cover the AC power demand
+        P_pvbs = np.minimum(_Pac(t - _t_DEAD), _P_PV2AC_out * 1000)
+        
+        # Normalized AC output power of the PV2AC conversion pathway
+        ppv2ac = P_pvbs / _P_PV2AC_out / 1000
+        
+        # Target DC input power of the PV2AC conversion pathway
+        P_pv2ac_in = P_pvbs + (_PV2AC_a_out * ppv2ac**2 + _PV2AC_b_out * ppv2ac + _PV2AC_c_out)
+
+        # Residual power 
+        P_rpv = _Ppv(t - _t_DEAD) - P_pv2ac_in
+                
+        # Decision if the battery should be charged or discharged
+        if P_rpv > P_PV2BAT_min and _soc0 < 1 - _th * (1 - _SOC_h):
+            '''
+            The last term th*(1-SOC_h) avoids the alternation between
+            charging and standby mode due to the DC power consumption of the
+            battery converter when the battery is fully charged. The battery
+            will not be recharged until the SOC falls below the SOC-threshold
+            (SOC_h) for recharging from PV.
+            '''
+            # Charging power
+            P_pv2bat_in = P_rpv
+            
+            # Adjust the charging power due to stationary deviations
+            P_pv2bat_in = np.maximum(0, P_pv2bat_in + _P_PV2BAT_DEV)
+            
+            # Limit the charging power to the maximum charging power
+            P_pv2bat_in = np.minimum(P_pv2bat_in, _P_PV2BAT_in * 1000)
+            
+            # Adjust the charging power due to the settling time
+            # (modeled by a first-order time delay element)
+            P_pv2bat_in = _tde * _Ppv2bat_in[t-1] + _tde * (P_pv2bat_in - _Ppv2bat_in[t-1]) * _ftde + P_pv2bat_in * (not _tde) 
+            
+            # Limit the charging power to the current power output of the PV generator
+            P_pv2bat_in = np.minimum(P_pv2bat_in, _Ppv[t])
+            
+            # Normalized charging power
+            ppv2bat = P_pv2bat_in / _P_PV2BAT_in / 1000
+            
+            # DC power of the battery
+            P_bat = np.maximum(0, P_pv2bat_in - (_PV2BAT_a_in * ppv2bat**2 + _PV2BAT_b_in * ppv2bat + _PV2BAT_c_in))
+                
+            # Realized DC input power of the PV2AC conversion pathway
+            P_pv2ac_in = _Ppv[t] - P_pv2bat_in
+            
+            # Limit the DC input power of the PV2AC conversion pathway
+            P_pv2ac_in = np.minimum(P_pv2ac_in, _P_PV2AC_in * 1000)
+            
+            # Recalculate Ppv(t) with limited PV2AC input power
+            _Ppv[t] = P_pv2ac_in + P_pv2bat_in
+            
+            # Normalized DC input power of the PV2AC conversion pathway
+            ppv2ac = P_pv2ac_in / _P_PV2AC_in / 1000
+            
+            # Realized AC power of the PV-battery system
+            P_pv2ac_out = np.maximum(0, P_pv2ac_in - (_PV2AC_a_in * ppv2ac**2 + _PV2AC_b_in * ppv2ac + _PV2AC_c_in))
+            P_pvbs = P_pv2ac_out
+            
+            # Transfer the final values
+            _Ppv2ac_out[t] = P_pv2ac_out
+            _Ppv2bat_in[t] = P_pv2bat_in
+            
+        elif P_rpv < -P_BAT2PV_min and _soc0 > 0:
+            # Target discharging power of the battery
+            P_bat2pv_out = np.abs(P_rpv)
+            
+            # Adjust the discharging power due to the stationary deviations
+            P_bat2ac_out = np.maximum(0, P_bat2ac_out + _P_BAT2AC_DEV)
+            
+            # Adjust the discharging power to the maximum discharging power
+            P_bat2ac_out = np.minimum(P_bat2pv_out, _P_BAT2PV_out * 1000)
+            
+            # Adjust the discharging power due to the settling time
+            # (modeled by a first-order time delay element)
+            P_bat2ac_out = _tde * _Pbat2pv_out[t-1] + _tde * (P_bat2ac_out - _Pbat2pv_out[t-1]) * _ftde + P_bat2ac_out * (not _tde)
+            
+            # Recalculate   np. withimum limited PV2AC input power
+            _Ppv[t] = np.minimum(_P_PV2AC_in * 1000, _Ppv[t])
+            
+            # Limit the discharging power to the maximum AC power output of the PV-battery system
+            P_bat2ac_out = np.minimum(_P_PV2AC_in * 1000 - _Ppv[t], P_bat2ac_out)
+            
+            # Normalized discharging power
+            pbat2pv = P_bat2ac_out / _P_BAT2PV_out / 1000
+            
+            # DC power of the battery affected by the BAT2PV conversion losses
+            P_bat = -1 * (P_bat2ac_out + (_BAT2PV_a_out * pbat2pv**2 + _BAT2PV_b_out * pbat2pv + _BAT2PV_c_out))
+            
+            # Realized DC input power of the PV2AC conversion pathway
+            P_pv2ac_in = _Ppv[t] + P_bat2ac_out
+            
+            # Normalized DC input power of the PV2AC conversion pathway
+            ppv2ac = P_pv2ac_in / _P_PV2AC_in / 1000
+            
+            # AC power of the PV-battery system
+            P_pvbs = np.maximum(0, P_pv2ac_in - (_PV2AC_a_in * ppv2ac**2 + _PV2AC_b_in * ppv2ac + _PV2AC_c_in))
+            P_pv2ac_out = P_pvbs
+            
+            # Transfer the final values
+            _Ppv2ac_out[t] = P_pv2ac_out
+            _Pbat2pv_out[t] = P_bat2ac_out
+                
+        else: # Neither charging nor discharging of the battery
+            
+            # Set the DC power of the battery to zero
+            P_bat = 0
+            
+            # Limit the power output of the PV generator to the maximum input power
+            # of the PV inverter
+            _Ppv[t] = np.minimum(_Ppv[t], _P_PV2AC_in * 1000)
+            
+            # Normalized DC input power of the PV2AC conversion pathway
+            ppv2ac = _Ppv[t] / _P_PV2AC_in / 1000
+            
+            # Realized AC power of the PV-battery system
+            P_pvbs = np.maximum(0, _Ppv[t] - (_PV2AC_a_in * ppv2ac**2 + _PV2AC_b_in * ppv2ac + _PV2AC_c_in))
+
+            # Transfer the final values
+            _Ppv2ac_out[t] = P_pvbs
+            
+        # Decision if the standby mode is active
+        if P_bat == 0 and _soc0 <= 0: # Standby mode in discharged state
+            
+            # DC power consumption of the battery converter
+            P_bat = -np.maximum(0, _P_SYS_SOC0_DC)
+            if P_pvbs == 0:        
+                P_pvbs = -_P_SYS_SOC0_AC
+                
+        elif P_bat == 0 and P_pvbs > 0 and _soc0 > 0: # Standby mode in fully charged state
+
+            # DC power consumption of the battery converter
+            P_bat = -np.maximum(0, _P_SYS_SOC1_DC)
+    
+
+        # Transfer the realized AC power of the battery system and 
+        # the DC power of the battery
+        _Ppvbs[t] = P_pvbs
+        _Pbat[t] = P_bat
+        
+        # Change the energy content of the battery Wx to Wh conversio
+        if P_bat > 0:
+            E_b = E_b0 + P_bat * np.sqrt(_eta_BAT) * _dt / 3600
+        
+        elif P_bat < 0:
+            E_b = E_b0 + P_bat / np.sqrt(_eta_BAT) * _dt / 3600
+        
+        else:
+            E_b = E_b0
+        
+        # Calculate the state of charge of the battery
+        _soc0 = E_b / (_E_BAT)
+        _soc[t] = _soc0
+        
+        # Adjust the hysteresis threshold to avoid alternation
+        # between charging and standby mode due to the DC power
+        # consumption of the battery converter.
+        if _th and _soc[t] > _SOC_h or _soc[t] > 1:
+            _th = True
+        else:
+            _th = False 
+
+    return _soc, _soc0, _Ppv, _Ppvbs, _Pbat, _Ppv2ac_out, _Pbat2pv_out, _Ppv2bat_in
+
+def bat_res_mod(_parameter, _Pl, _Ppv, _Pbat, _dt, *args):
+    '''
+    TODO
+    Bei der Umwandlung zu MWh dt brücksichtigen!
+    '''    
+    
+    _E = dict()
+
+    if _parameter['Top'] == 'AC': # AC-coupled systems
+        
+        _Ppvs = args[0] # AC output power of the PV system
+        _Pbs = args[1] # AC power of the battery system
+        _Pperi = args[2] # Additional power consumption of the other system components
+        
+    elif _parameter['Top'] == 'DC' or _parameter['Top'] == 'PV': # DC- and PV-coupled systems
+        
+        _Ppv2ac = args[0] # AC output power of the PV2AC conversion pathway
+        _Ppv2bat_in = args[1] # Input power of the PV2BAT conversion pathway
+        _Ppvbs = args[2] # AC power of the PV-battery system
+        _Pperi = args[3] # Additional power consumption of the other system components
+
+        _Ppv2ac_in = _Ppv - _Ppv2bat_in # Input power of the PV2AC conversion pathway
+        
+    # Total load including the power consumption of the other system components
+    _Plt = _Pl + _Pperi
+    # DC input power of the battery (charged)
+    _Pbatin = np.maximum(0, _Pbat)
+    # DC output power of the battery (discharged)
+    _Pbatout = np.minimum(0, _Pbat)
+    # Maximum PV feed-in power
+    _P_ac2g_max = _parameter['p_ac2g_max'] * _parameter['P_PV'] * 1000
+
+    if _parameter['Top'] == 'AC': # AC-coupled systems
+        
+        # Residual power without curtailment
+        _Pr = _Ppvs - _Plt
+        # AC input power of the battery system
+        _Pac2bs = np.maximum(0, _Pbs)
+        # AC output power of the battery system
+        _Pbs2ac = np.minimum(0, _Pbs)
+        # Negative residual power (residual load demand)
+        _Prn = np.minimum(0, _Pr)
+        # Positive residual power (surplus PV power)
+        _Prp = np.maximum(0, _Pr)
+        # Direct use of PV power by the load 
+        _Ppvs2l = np.minimum(_Ppvs, _Plt)
+        # PV charging power
+        _Ppvs2bs = np.minimum(_Prp, _Pac2bs)
+        # Grid charging power
+        _Pg2bs = np.maximum(_Pac2bs - _Prp, 0)
+        # Grid supply power of the load
+        _Pg2l = np.minimum(_Prn - _Pbs2ac, 0)
+        # Battery supply power of the load
+        _Pbs2l = np.maximum(_Prn, _Pbs2ac)
+        # Battery feed-in power
+        _Pbs2g = np.minimum(_Pbs2ac - _Prn, 0)
+        # PV feed-in power including curtailment 
+        _Ppvs2g = np.minimum(np.maximum(_Prp - _Pac2bs, 0), _P_ac2g_max)
+        # Power demand from the grid
+        _Pg2ac = _Pg2l - _Pg2bs
+        # Feed-in power to the grid
+        _Pac2g = _Ppvs2g - _Pbs2g
+        # Grid power
+        _Pg = _Pac2g + _Pg2ac
+        # Curtailed PV power (AC output power)
+        _Pct = np.maximum(_Prp - _Pac2bs, 0) - _Ppvs2g
+        # AC output power of the PV system including curtailment
+        _Ppvs = _Ppvs - _Pct
+        # Residual power including curtailment
+        _Pr = _Ppvs - _Plt
+        # Index for PV curtailment
+        _idx = np.where(_Pct > 0)[0]
+        
+        for i in range(len(_idx)):
+            
+            _tct = _idx[i]
+            # Normalized output power of the PV inverter
+            _ppvinvout = _Ppvs[_tct] / _parameter['P_PV2AC_out'] / 1000
+            # DC output power of the PV generator taking into account the
+            # conversion and curtailment losses
+            _Ppv[_tct] = _Ppvs[_tct] + (_parameter['PV2AC_a_out'] * _ppvinvout**2 + _parameter['PV2AC_b_out'] * _ppvinvout + _parameter['PV2AC_c_out'])           
+
+    elif _parameter['Top'] == 'DC' or _parameter['Top'] == 'PV': # DC- and PV-coupled systems
+        
+        # Grid power demand of the PV-battery system
+        _Pg2pvbs = np.minimum(0, _Ppvbs)
+        # AC input power of the PV-battery system
+        _Pac2pvbs = _Pg2pvbs
+        # AC output power of the PV-battery system
+        _Ppvbs2ac = np.maximum(0, _Ppvbs)
+        # Load supply power by the PV-battery system
+        _Ppvbs2l = np.minimum(_Plt, _Ppvbs2ac)
+        # Load supply power by the grid
+        _Pg2l = _Plt - _Ppvbs2l
+        # Direct use of PV power by the load 
+        _Ppv2l = np.minimum(_Plt, _Ppv2ac)
+        # PV feed-in power including curtailment 
+        _Ppv2g = np.minimum(_Ppv2ac - _Ppv2l, _P_ac2g_max)
+        # Curtailed PV power (AC output power)
+        _Pct = _Ppv2ac - _Ppv2l - _Ppv2g
+        
+        if np.sum(_Pct) > 0:            
+            # Power of the PV-battery system including curtailment
+            _Ppvbs = _Ppvbs - _Pct
+            # AC output power of the PV-battery system including curtailment
+            _Ppvbs2ac = np.maximum(0, _Ppvbs)
+            # AC output power of the PV2AC conversion pathway including curtailment
+            _Ppv2ac = _Ppv2ac - _Pct
+            # Index for PV curtailment
+            _idx = np.where(_Pct > 0)[0]
+                            
+            for i in range(len(_idx)):
+                
+                _tct = _idx[i]
+                # Specific AC output power of the PV2AC conversion pathway
+                _ppv2ac = _Ppv2ac[_tct] / _parameter['P_PV2AC_out'] / 1000
+                # DC input power of the PV2AC conversion pathway including curtailment
+                _Ppv2ac_in[_tct] = _Ppv2ac[_tct] + (_parameter['PV2AC_a_out'] * _ppv2ac **2 + _parameter['PV2AC_b_out'] * _ppv2ac + _parameter['PV2AC_c_out'])
+            
+            # DC output power of the PV generator including curtailment
+            _Ppv = _Ppv2ac_in + _Ppv2bat_in
+            
+        # Grid power including curtailment
+        _Pg = _Ppvbs-_Plt
+        # Feed-in power to the grid including curtailment
+        _Pac2g = np.maximum(0, _Pg)
+        # Power demand from the grid
+        _Pg2ac = np.minimum(0, _Pg)
+    
+    # 2. Energy sums
+    # All variables in MWh
+        
+    # Electrical demand including the energy consumption of the other system components
+    _E['El'] = np.sum(np.abs(_Plt)) * _dt  / 3.6e9
+    # DC output of the PV generator including curtailment
+    _E['Epv'] = np.sum(np.abs(_Ppv)) * _dt / 3.6e9
+    # DC input of the battery (charged)
+    _E['Ebatin'] = np.sum(np.abs(_Pbatin)) * _dt / 3.6e9
+    # DC output of the battery (discharged)
+    _E['Ebatout'] = np.sum(np.abs(_Pbatout)) * _dt / 3.6e9
+    # Grid feed-in
+    _E['Eac2g'] = np.sum(np.abs(_Pac2g)) * _dt / 3.6e9
+    # Grid demand
+    _E['Eg2ac'] = np.sum(np.abs(_Pg2ac)) * _dt / 3.6e9
+    # Load supply by the grid
+    _E['Eg2l'] = np.sum(np.abs(_Pg2l)) * _dt / 3.6e9
+    # Demand of the other system components
+    _E['Eperi'] = np.sum(np.abs(_Pperi)) * _dt / 3.6e9
+    # Curtailed PV energy
+    _E['Ect'] = np.sum(np.abs(_Pct)) * _dt / 3.6e9
+    
+    if _parameter['Top'] == 'AC': # AC-coupled systems
+        
+        # AC output of the PV system including curtailment
+        _E['Epvs'] = np.sum(np.abs(_Ppvs)) * _dt / 3.6e9
+        # AC input of the battery system
+        _E['Eac2bs'] = np.sum(np.abs(_Pac2bs)) * _dt / 3.6e9
+        # AC output of the battery system
+        _E['Ebs2ac'] = np.sum(np.abs(_Pbs2ac)) * _dt / 3.6e9
+        # Direct use of PV energy
+        _E['Epvs2l'] = np.sum(np.abs(_Ppvs2l)) * _dt / 3.6e9
+        # PV charging
+        _E['Epvs2bs'] = np.sum(np.abs(_Ppvs2bs)) * _dt / 3.6e9
+        # Grid charging
+        _E['Eg2bs'] = np.sum(np.abs(_Pg2bs)) * _dt / 3.6e9
+        # PV feed-in
+        _E['Epvs2g'] = np.sum(np.abs(_Ppvs2g)) * _dt / 3.6e9
+        # Load supply by the battery system
+        _E['Ebs2l'] = np.sum(np.abs(_Pbs2l)) * _dt / 3.6e9
+        # Battery feed-in
+        _E['Ebs2g'] = np.sum(np.abs(_Pbs2g)) * _dt / 3.6e9
+        
+    elif _parameter['Top'] == 'DC' or _parameter['Top'] == 'PV': # DC- and PV-coupled systems
+        
+        # Grid demand of the PV-battery system
+        _E['Eg2pvbs'] = np.sum(np.abs(_Pg2pvbs)) * _dt / 3.6e9
+        # AC input of the PV-battery system
+        _E['Eac2pvbs'] = np.sum(np.abs(_Pac2pvbs)) * _dt / 3.6e9
+        # AC output of the PV-battery system
+        _E['Epvbs2ac'] = np.sum(np.abs(_Ppvbs2ac)) * _dt / 3.6e9
+        # Load supply by the PV-battery system
+        _E['Epvbs2l'] = np.sum(np.abs(_Ppvbs2l)) * _dt / 3.6e9  
+    
+    return _E        
+
 
 def transform_dict_to_array(parameter):
     # 
@@ -932,6 +1298,9 @@ def transform_dict_to_array(parameter):
         d = np.append(d, parameter['P_SYS_SOC1_DC'])        #  20   
         d = np.append(d, parameter['P_SYS_SOC0_AC'])         #   21 
         d = np.append(d, parameter['P_SYS_SOC0_DC'])          #   22
+
+    if parameter['Top'] == 'PV':
+        pass
            
     return d
 
