@@ -349,13 +349,14 @@ class ModBus(object):
                 self.P_ac = utils.decode_ieee(*zregs) 
                       
                 self.P_bat = np.int16(*_P_bat)
-                
+                # Save the values to a csv file
                 self.save_to_csv()
                                 
                 i += 1
         self.c.close()
 
     def read_soc(self, reg):
+        # Load the actual state fo charge of the battery
         regs = self.c.read_holding_registers(reg, 2)        
         # Load content of two registers into a single float value
         zregs = utils.word_list_to_long(regs, big_endian=False)
@@ -363,7 +364,7 @@ class ModBus(object):
         return utils.decode_ieee(*zregs)
 
     def create_csv_file(self):
-         
+         # Create a new csv-file
          with open(self.fname, 'w') as f:
             writer = csv.writer(f, dialect='excel')
             writer.writerow(['set_time',
@@ -374,7 +375,7 @@ class ModBus(object):
                              'P_bat']) 
 
     def save_to_csv(self):
-        
+        # Save the read values to a csv file
         with open(self.fname, "a") as f:
             wr = csv.writer(f, dialect='excel')
             wr.writerow([self.set_time, self.read_time_P_ac, self.read_time_P_bat, self.set_val, self.P_ac, self.P_bat])
