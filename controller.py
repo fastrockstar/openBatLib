@@ -66,9 +66,9 @@ class Controller(object):
         # Load the view class
         self.view = view.View()
     
-    def modbus(self, host, port, unit_id, input_val):
-        set_val = self._load_set_values(input_val)
-        self.model = model.ModBus(host, port, unit_id, set_val)
+    def modbus(self, host, port, unit_id, input_vals, dt, fname):
+        
+        self.model = model.ModBus(host, port, unit_id, input_vals, dt, fname)
     '''
     Dieser Aufruf bekommt keine ppv sondern nur eine Pr etc.?
     Benötigt man hier ein überhaupt die Last oder reicht eine Angabe der Residualleistung als Eingangsparameter aus?

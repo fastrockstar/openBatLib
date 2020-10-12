@@ -286,17 +286,15 @@ class ModBus(object):
     :param object: object
     :type object: object
     """
-    def __init__(self, host, port, unit_id, dt, Pr, fname):
+    def __init__(self, host, port, unit_id, input_vals, dt, fname):
         self.host = host
         self.port = port
         self.unit_id = unit_id
         self.dt = dt
-        self.Pr = Pr
+        self.input_vals = input_vals
         self.fname = fname
         self.open_connection()
         self.create_csv_file()
-
-        self.soc0 = self.read_soc(210)
 
         self.start_loop()
     
@@ -311,13 +309,14 @@ class ModBus(object):
 
     def start_loop(self):
         # Transform the array to fit the time duration
-        self.set_vals = np.repeat(self.Pr, self.dt)
+        self.set_vals = np.repeat(self.input_vals, self.dt * 60)
         
         i = 0
-        idx = pd.date_range(start=datetime.datetime.now(), periods=(self.set_vals.size * self.dt), freq='S')
+        idx = pd.date_range(start=datetime.datetime.now(), periods=(self.input_vals.size * 60), freq='S')
+        print(len(idx))
         while i<len(idx):
             if datetime.datetime.now().second == idx[i].second:
-                self.set_val = self.set_vals[i]
+                self.set_val = int(self.set_vals[i])
                 if self.set_val < 0:
                     # Write negative value to battery charge power (AC) setpoint register
                     self.c.write_single_register(1024, self.set_val & 0xFFFF)
@@ -345,16 +344,17 @@ class ModBus(object):
                         
                 # Load content of two registers into a single float value
                 zregs = utils.word_list_to_long(_P_ac, big_endian=False)
-                # Decode and store float value
+                # Decode and store float value of the AC-power
                 self.P_ac = utils.decode_ieee(*zregs) 
-                      
+                # Store the DC charging power 
                 self.P_bat = np.int16(*_P_bat)
+                # Read actual soc
+                self.soc0 = self.read_soc(210)
                 # Save the values to a csv file
                 self.save_to_csv()
                                 
                 i += 1
-        self.c.close()
-
+ 
     def read_soc(self, reg):
         # Load the actual state fo charge of the battery
         regs = self.c.read_holding_registers(reg, 2)        
@@ -370,6 +370,7 @@ class ModBus(object):
             writer.writerow(['set_time',
                              'read_time_P_ac',
                              'read_time_P_bat',
+                             'soc',
                              'set_value',
                              'P_ac',
                              'P_bat']) 
@@ -378,7 +379,7 @@ class ModBus(object):
         # Save the read values to a csv file
         with open(self.fname, "a") as f:
             wr = csv.writer(f, dialect='excel')
-            wr.writerow([self.set_time, self.read_time_P_ac, self.read_time_P_bat, self.set_val, self.P_ac, self.P_bat])
+            wr.writerow([self.set_time, self.read_time_P_ac, self.read_time_P_bat, self.soc0, self.set_val, self.P_ac, self.P_bat])
 
 def max_self_consumption(parameter, ppv, pl, pvmod=True, max=True):
 
