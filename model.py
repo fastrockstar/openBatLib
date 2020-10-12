@@ -881,13 +881,11 @@ def BatMod_DC(d, _dt, _soc0, _soc, _Pr, _Prpv,  _Ppv, _Ppv2bat_in0, _Ppv2bat_in,
 
     return _Ppv2ac_out, _Ppv2bat_in, _Ppv2bat_in0, _Pbat2ac_out, _Pbat2ac_out0, _Ppvbs, _Pbat, _soc, _soc0
 
-<<<<<<< HEAD
 @nb.jit(nopython=True)
 def BatMod_PV(d, dt, soc0, _soc):
+    # Parameter von Johannes Anfragen
     pass
 
-=======
->>>>>>> 9b71aef3f38acac8ef3a53aae042853222bf447e
 def transform_dict_to_array(parameter):
     # 
     if parameter['Top'] == 'AC':
