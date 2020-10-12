@@ -80,14 +80,14 @@ class Controller(object):
     def real_time(self, parameter, **kwargs):
         if parameter['Top'] == 'AC':
             d = self._dict_to_array(parameter)
-            Pbat, Pbs, soc, soc0 = model.run_loss_AC_test(d, **kwargs)
+            Pbat, Pbs, soc, soc0 = model.BatMod_AC(d, **kwargs)
             return Pbat, Pbs, soc, soc0
         elif type == 'DC':
             d = self._dict_to_array(parameter)
-            Ppv2ac_out, Ppv2bat_in, Ppv2bat_in0, Pbat2ac_out, Pbat2ac_out0, Ppvbs, Pbat, soc, soc0 = model.run_loss_DC_test(d, **kwargs)
+            Ppv2ac_out, Ppv2bat_in, Ppv2bat_in0, Pbat2ac_out, Pbat2ac_out0, Ppvbs, Pbat, soc, soc0 = model.BatMod_DC(d, **kwargs)
             return Ppv2ac_out, Ppv2bat_in, Ppv2bat_in0, Pbat2ac_out, Pbat2ac_out0, Ppvbs, Pbat, soc, soc0
         elif type == 'PV':
-            self.model = tools.run_loss_PV()
+            self.model = model.BatMod_PV(d, **kwargs)
     
     def _load_parameter(self, fparameter, system):
         """Loads system parameter

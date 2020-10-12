@@ -58,7 +58,7 @@ class BatModDC(object):
               2 Pr/Prpv anpassen 
         '''
 
-        self.Ppv2ac_out, self.Ppv2bat_in, self.Ppv2bat_in0, self.Pbat2ac_out, self.Pbat2ac_out0, self.Ppvbs, self.Pbat, self.soc, self.soc0 = run_loss_DC_test(self.d, self.dt, self.soc0, self.soc, self.Pr, self.Prpv,  self.Ppv, self.Ppv2bat_in0, self.Ppv2bat_in, self.Pbat2ac_out0, self.Pbat2ac_out, self.Ppv2ac_out0, self.Ppv2ac_out, self.Ppvbs, self.Pbat)
+        self.Ppv2ac_out, self.Ppv2bat_in, self.Ppv2bat_in0, self.Pbat2ac_out, self.Pbat2ac_out0, self.Ppvbs, self.Pbat, self.soc, self.soc0 = BatMod_DC_(self.d, self.dt, self.soc0, self.soc, self.Pr, self.Prpv,  self.Ppv, self.Ppv2bat_in0, self.Ppv2bat_in, self.Pbat2ac_out0, self.Pbat2ac_out, self.Ppv2ac_out0, self.Ppv2ac_out, self.Ppvbs, self.Pbat)
         
         # self.efine missing parameters
         self.Ppv2ac = self.Ppv2ac_out # AC output power of the PV2AC conversion pathway
@@ -138,7 +138,7 @@ class BatModAC(object):
         
         ## 3.3 Simulation of the battery system
         #self.Pbat, self.Pbs, self.soc, self.soc0 = run_loss_AC(self.parameter['E_BAT'], self.parameter['eta_BAT'], self.parameter['t_CONSTANT'], self.parameter['P_SYS_SOC0_DC'], self.parameter['P_SYS_SOC0_AC'], self.parameter['P_SYS_SOC1_DC'], self.parameter['P_SYS_SOC1_AC'], self.parameter['AC2BAT_a_in'], self.parameter['AC2BAT_b_in'], self.parameter['AC2BAT_c_in'], self.parameter['BAT2AC_a_out'], self.parameter['BAT2AC_b_out'], self.parameter['BAT2AC_c_out'], self.parameter['P_AC2BAT_DEV'], self.parameter['P_BAT2AC_DEV'], self.parameter['P_BAT2AC_out'], self.parameter['P_AC2BAT_in'], round(self.parameter['t_DEAD']) , self.parameter['SOC_h'], self.dt, self.th, self.soc0, int(self.ppv.size), self.soc, self.Pr, self.Pbs, self.Pbat)
-        self.Pbat, self.Pbs, self.soc, self.soc0, self.Pbs0 = run_loss_AC_test(self.d, self.dt, self.soc0, self.soc, self.Pr, self.Pbs0, self.Pbs, self.Pbat)
+        self.Pbat, self.Pbs, self.soc, self.soc0, self.Pbs0 = BatMod_AC(self.d, self.dt, self.soc0, self.soc, self.Pr, self.Pbs0, self.Pbs, self.Pbat)
 
     def bat_mod_res(self):
         self.E = tools.bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat, self.dt, self.Ppvs, self.Pbs, self.Pperi) 
@@ -486,7 +486,7 @@ def max_self_consumption(parameter, ppv, pl, pvmod=True, max=True):
         return Pac, Ppv, Pperi
 
 @nb.jit(nopython=True)
-def run_loss_AC_test(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
+def BatMod_AC(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
     # Loading of particular variables
     _P_AC2BAT_min = d[9] #_AC2BAT_c_in Minimum AC charging power
     _P_BAT2AC_min = d[12]#_BAT2AC_c_out Minimum AC discharging power
@@ -661,7 +661,7 @@ def run_loss_AC_test(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
     return _Pbat, _Pbs, _soc, _soc0, _Pbs0
 
 @nb.jit(nopython=True)
-def run_loss_DC_test(d, _dt, _soc0, _soc, _Pr, _Prpv,  _Ppv, _Ppv2bat_in0, _Ppv2bat_in, _Pbat2ac_out0, _Pbat2ac_out, _Ppv2ac_out0, _Ppv2ac_out, _Ppvbs, _Pbat):
+def BatMod_DC(d, _dt, _soc0, _soc, _Pr, _Prpv,  _Ppv, _Ppv2bat_in0, _Ppv2bat_in, _Pbat2ac_out0, _Pbat2ac_out, _Ppv2ac_out0, _Ppv2ac_out, _Ppvbs, _Pbat):
     '''
     TODO 1 t_start auf das 2. Element?
     '''
@@ -880,6 +880,10 @@ def run_loss_DC_test(d, _dt, _soc0, _soc, _Pr, _Prpv,  _Ppv, _Ppv2bat_in0, _Ppv2
             _th = False 
 
     return _Ppv2ac_out, _Ppv2bat_in, _Ppv2bat_in0, _Pbat2ac_out, _Pbat2ac_out0, _Ppvbs, _Pbat, _soc, _soc0
+
+@nb.jit(nopython=True)
+def BatMod_PV(d, dt, soc0, _soc):
+    pass
 
 def transform_dict_to_array(parameter):
     # 
