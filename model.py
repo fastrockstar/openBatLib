@@ -350,9 +350,13 @@ class ModBus(object):
                 self.P_bat = np.int16(*_P_bat)
                 # Read actual soc
                 self.soc0 = self.read_soc(210)
-                # Save the values to a csv file
-                self.save_to_csv()
-                                
+
+                try:
+                    # Save the values to a csv file
+                    self.save_to_csv()
+                except:
+                    print('Could not save to csv!')                    
+                
                 i += 1
  
     def read_soc(self, reg):
@@ -521,21 +525,21 @@ def run_loss_AC_test(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
 
     _E_BAT *= 1000 # Capacity of the battery, conversion from kWh to Wh
 
-    _eta_BAT /= 100
+    _eta_BAT /= 100 # Effiency of the battery
     
-    # Check if the dead time can be ignored.
+    # Check if the dead or settling time can be ignored and set flags accordingly
     if _dt >= (3 * _t_CONSTANT) or _tend == 1:
         _tstart = 1
         T_DEAD = False
     else:
         T_DEAD = True
 
-    # Check if the settling time can be ignored
     if _dt >= _t_DEAD + 3 * _t_CONSTANT:
         SETTLING = False
     else:
         SETTLING = True
     
+
     for t in range(_tstart - 1, _tend):
 
         # Energy content of the battery in the previous time step
@@ -699,6 +703,7 @@ def run_loss_DC_test(d, _dt, _soc0, _soc, _Pr, _Prpv,  _Ppv, _Ppv2bat_in0, _Ppv2
     _th = 0
     corr = 0.1
 
+    # Check if the dead or settling time can be ignored and set flags accordingly
     if _dt >= (3 * _t_CONSTANT) or _tend == 1:
         _tstart = 1
         T_DEAD = False
@@ -709,6 +714,7 @@ def run_loss_DC_test(d, _dt, _soc0, _soc, _Pr, _Prpv,  _Ppv, _Ppv2bat_in0, _Ppv2
         SETTLING = False
     else:
         SETTLING = True
+
 
     for t in range(_tstart -1, _tend):
         # Energy content of the battery in the previous time step
