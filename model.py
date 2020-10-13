@@ -1314,3 +1314,10 @@ def transform_dict_to_array(parameter):
 # Oder doch nur Pbs übergeben, so dass das Modul si durchlaufen kann? Also auf Pr etc. verzichten. Im ersten Durchlauf ist auch Pbs noch 0.
 # Für das Dc MOdell müssen andere Parameter übergeben werden, hier gibt es eine eigene Leistung zum Laden Pr und Prpv und Entladen der Batterie.
 # Hier werden auch Pbat und Pbs zurück gegeben
+# Darauf achten, dass die Variablen alle richtig durchgehen.
+# Den Treshold zwischenspeichern und zurückgeben für die nächste Iteration der Schleife
+# Alle Variablen noch sinnvol bennenen
+# BatMod_PV Debuffen, dazu die Parameter aus der Dissertation extrahierne
+# Den d Parameter für BatMod_PV richtig bilden
+# Welche Eingangsreihen wird für den Langzeittest verwendet werden. EIne echte Zeitreihe? Wie groß dürfen die Daten sein. Die PV-Anlage der Hochschule ist hierfür zu groß.
+# Arrays als Zwischenspeixher verwenden, wenn nicht in die CSV geschrieben werden konnte
