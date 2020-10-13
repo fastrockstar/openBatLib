@@ -897,6 +897,19 @@ def BatMod_PV(d, dt, soc0, _soc):
     _eta_BAT /= 100
     # Ab hier beginnt die Schleife
     # Start of the time step simulation
+    # Check if the dead or settling time can be ignored and set flags accordingly
+    if _dt >= (3 * _t_CONSTANT) or _tend == 1:
+        _tstart = 1
+        T_DEAD = False
+    else:
+        T_DEAD = True
+
+    if _dt >= _t_DEAD + 3 * _t_CONSTANT:
+        SETTLING = False
+    else:
+        SETTLING = True
+    
+
     for t in range(_tstart - 1, _tend):
         
         # Energy content of the battery in the previous time step
@@ -912,7 +925,7 @@ def BatMod_PV(d, dt, soc0, _soc):
         P_pv2ac_in = P_pvbs + (_PV2AC_a_out * ppv2ac**2 + _PV2AC_b_out * ppv2ac + _PV2AC_c_out)
 
         # Residual power 
-        P_rpv = _Ppv(t - _t_DEAD) - P_pv2ac_in
+        P_rpv = [_Ppvt - _t_DEAD] - P_pv2ac_in
                 
         # Decision if the battery should be charged or discharged
         if P_rpv > P_PV2BAT_min and _soc0 < 1 - _th * (1 - _SOC_h):
@@ -934,8 +947,10 @@ def BatMod_PV(d, dt, soc0, _soc):
             
             # Adjust the charging power due to the settling time
             # (modeled by a first-order time delay element)
-            P_pv2bat_in = _tde * _Ppv2bat_in[t-1] + _tde * (P_pv2bat_in - _Ppv2bat_in[t-1]) * _ftde + P_pv2bat_in * (not _tde) 
-            
+            if SETTLING:
+                P_pv2bat_in = _tde * _Ppv2bat_in[t-1] + _tde * (P_pv2bat_in - _Ppv2bat_in[t-1]) * _ftde + P_pv2bat_in * (not _tde) 
+            else:
+                P_pv2bat_in = _tde * _Ppv2bat_in0 + _tde * (P_pv2bat_in - _Ppv2bat_in0) * _ftde + P_pv2bat_in * (not _tde) 
             # Limit the charging power to the current power output of the PV generator
             P_pv2bat_in = np.minimum(P_pv2bat_in, _Ppv[t])
             
@@ -977,7 +992,10 @@ def BatMod_PV(d, dt, soc0, _soc):
             
             # Adjust the discharging power due to the settling time
             # (modeled by a first-order time delay element)
-            P_bat2ac_out = _tde * _Pbat2pv_out[t-1] + _tde * (P_bat2ac_out - _Pbat2pv_out[t-1]) * _ftde + P_bat2ac_out * (not _tde)
+            if SETTLING:
+                P_bat2ac_out = _tde * _Pbat2pv_out[t-1] + _tde * (P_bat2ac_out - _Pbat2pv_out[t-1]) * _ftde + P_bat2ac_out * (not _tde)
+            else:
+                P_bat2ac_out = _tde * _Pbat2pv_out0 + _tde * (P_bat2ac_out - _Pbat2pv_out0) * _ftde + P_bat2ac_out * (not _tde)
             
             # Recalculate   np. withimum limited PV2AC input power
             _Ppv[t] = np.minimum(_P_PV2AC_in * 1000, _Ppv[t])
