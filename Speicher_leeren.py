@@ -23,7 +23,7 @@ def read_soc(reg):
 
 soc = read_soc(210)
 
-while (soc > 0):
+while (soc > 5):
     soc = read_soc(210)
     c.write_single_register(1024, 5000)
 

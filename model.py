@@ -11,6 +11,7 @@ import datetime
 import csv
 from pyModbusTCP.client import ModbusClient
 from pyModbusTCP  import utils
+import progressbar
 
 class BatModDC(object):
     """Performance Simulation Model for DC-coupled PV-Battery systems
@@ -310,7 +311,7 @@ class ModBus(object):
     def start_loop(self):
         # Transform the array to fit the 1 minute time duration
         #self.set_vals = np.repeat(self.input_vals, self.dt * 60)
-        
+        bar = progressbar.ProgressBar('Testlauf', max = self.input_vals.size)
         i = 0
         idx = pd.date_range(start=datetime.datetime.now(), periods=(self.input_vals.size), freq='S')
         while i<len(idx):
@@ -356,6 +357,10 @@ class ModBus(object):
                 except:
                     print('Could not save to csv!')                    
                 
+                # Update progress bar
+
+                bar.update(i)
+
                 i += 1
  
     def read_soc(self, reg):
