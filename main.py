@@ -25,7 +25,7 @@ ref_case = '1'
 
 df_test_run = pd.read_csv(fname_test, index_col=0, parse_dates=True)
 
-dt = 60
+dt = 1
 soc0 = 0.8 
 soc = np.array([0.0])
 Pr = np.array([1000])
