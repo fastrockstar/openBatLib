@@ -308,15 +308,14 @@ class ModBus(object):
         # Arrray for the setting values
 
     def start_loop(self):
-        # Transform the array to fit the time duration
-        self.set_vals = np.repeat(self.input_vals, self.dt * 60)
+        # Transform the array to fit the 1 minute time duration
+        #self.set_vals = np.repeat(self.input_vals, self.dt * 60)
         
         i = 0
-        idx = pd.date_range(start=datetime.datetime.now(), periods=(self.input_vals.size * 60), freq='S')
-        print(len(idx))
+        idx = pd.date_range(start=datetime.datetime.now(), periods=(self.input_vals.size), freq='S')
         while i<len(idx):
             if datetime.datetime.now().second == idx[i].second:
-                self.set_val = int(self.set_vals[i])
+                self.set_val = int(self.input_vals[i])
                 if self.set_val < 0:
                     # Write negative value to battery charge power (AC) setpoint register
                     self.c.write_single_register(1024, self.set_val & 0xFFFF)
@@ -1269,6 +1268,10 @@ def bat_res_mod(_parameter, _Pl, _Ppv, _Pbat, _dt, *args):
     
     return _E        
 
+def resample_data_frame(df):
+    df_rs = df.resample('1min').mean()
+    
+    return df_rs
 
 def transform_dict_to_array(parameter):
     # 

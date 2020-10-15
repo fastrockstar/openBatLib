@@ -52,13 +52,14 @@ class Controller(object):
         # Load the view class
         self.view = view.View()
     
-    def modbus(self, host, port, unit_id, ppv, pl, ref_case, dt, fname, fparameter, fmat, system):
+    def modbus(self, host, port, unit_id, data_frame, ref_case, dt, fname, fparameter, fmat, system):
         parameter = self._load_parameter(fparameter, system)
-        ppv = ppv
-        pl = pl
-        parameter, pl1 = self._load_ref_case(parameter, fmat, fparameter, ref_case)
+        #df_resample = model.resample_data_frame(df=data_frame)
+        ppv = data_frame['ppv'].to_numpy()
+        pl = data_frame['L'].to_numpy()
+        parameter, pl_not_used = self._load_ref_case(parameter, fmat, fparameter, ref_case)
 
-        Pr, Ppv, Ppvs, Pperi = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
+        Pr, Ppv_not_used, Ppvs_not_used, Pperi_not_used = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
 
         self.model = model.ModBus(host, port, unit_id, Pr, dt, fname)
 
