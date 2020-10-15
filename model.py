@@ -315,6 +315,7 @@ class ModBus(object):
         idx = pd.date_range(start=datetime.datetime.now(), periods=(self.input_vals.size), freq='S')
         while i<len(idx):
             if datetime.datetime.now().second == idx[i].second:
+                # Set chrging value
                 self.set_val = int(self.input_vals[i])
                 if self.set_val < 0:
                     # Write negative value to battery charge power (AC) setpoint register
@@ -326,7 +327,7 @@ class ModBus(object):
                     self.c.write_single_register(1024, self.set_val)
                     # Log writing time
                     self.set_time = datetime.datetime.now()
-                
+
                 try:
                     # Read total AC power value from register
                     _P_ac = self.c.read_holding_registers(172, 2)
