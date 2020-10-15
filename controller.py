@@ -32,51 +32,36 @@ class Controller(object):
         # Load data from reference cases (load and inverter parameters)
         parameter, pl = self._load_ref_case(parameter, fmat, fparameter, ref_case)
 
-        #idx = pd.date_range(start='00:00:00', periods=len(ppv), freq='S')
-
-        #ppv = pd.Series(ppv, index=idx)
-
-        #pl = pd.Series(pl, index=idx)
-
-        #ppv = ppv.resample('15min').mean()
-
-        #ppv = ppv.to_numpy()
-
-        #pl = pl.resample('15min').mean()
-
-        #pl = pl.to_numpy()
-
         # Call model for AC coupled systems
         if parameter['Top'] == 'AC':
-            Pr, Ppv, Ppvs, Pperi = model.max_self_consumption(parameter, ppv, pl, pvmod=True, max=True)
+            Pr, Ppv, Ppvs, Pperi = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
             d = model.transform_dict_to_array(parameter)
             self.model = model.BatModAC(parameter, d, ppv, pl, Pr, Ppv, Ppvs, Pperi, dt)
         
         # Call model for DC coupled systems
         elif parameter['Top'] == 'DC':
-            Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out = model.max_self_consumption(parameter, ppv, pl, pvmod=True, max=True)
+            Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
             d = model.transform_dict_to_array(parameter)
             self.model = model.BatModDC(parameter, d, ppv, pl, Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out, dt)
         
         # Call model for PV-coupled systems
         elif parameter['Top'] == 'PV':
-            Pac, Ppv, Pperi = model.max_self_consumption(parameter, ppv, pl, pvmod=True, max=True)
+            Pac, Ppv, Pperi = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
             self.model = model.BatModPV(parameter, ppv, pl, Pac, Ppv, Pperi)
 
         # Load the view class
         self.view = view.View()
     
-    def modbus(self, host, port, unit_id, input_vals, dt, fname):
-        
-        self.model = model.ModBus(host, port, unit_id, input_vals, dt, fname)
-    '''
-    Dieser Aufruf bekommt keine ppv sondern nur eine Pr etc.?
-    Benötigt man hier ein überhaupt die Last oder reicht eine Angabe der Residualleistung als Eingangsparameter aus?
-    Das übergeben von dt als Wert in Sekunden läuft. Kann hier ein DataFrame verwendet werden?
-    Das dt dann aus dem Index lesen klappt nicht beim ersten Aufruf. Das dt muss händisch gesezt werden, und die übrigen Werte werden dann in dem DataFrame als neue Zeile angehängt.
-    Dann wird immer der vorheriger Wert aus dem Data Frame geladen. Bei ersten Durchlauf kann ein Totzeitberücksichtig werden
-    Hier wird dann der Speicher nicht geladen und es wird eine Null geschrieben. So lange, bis man einen ehcten Wert auslesen kann?
-    '''
+    def modbus(self, host, port, unit_id, ppv, pl, ref_case, dt, fname, fparameter, fmat, system):
+        parameter = self._load_parameter(fparameter, system)
+        ppv = ppv
+        pl = pl
+        parameter, pl1 = self._load_ref_case(parameter, fmat, fparameter, ref_case)
+
+        Pr, Ppv, Ppvs, Pperi = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
+
+        self.model = model.ModBus(host, port, unit_id, Pr, dt, fname)
+
     def real_time(self, parameter, **kwargs):
         if parameter['Top'] == 'AC':
             d = self._dict_to_array(parameter)
@@ -102,6 +87,9 @@ class Controller(object):
 
         return parameter
 
+    def get_residual_power_AC(self, parameter, ppv, pl):
+        Pr, Ppv, Ppvs, Pperi = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
+        return Pr
 
     def _dict_to_array(self, parameter):
         d = model.transform_dict_to_array(parameter)

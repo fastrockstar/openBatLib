@@ -385,7 +385,7 @@ class ModBus(object):
             wr = csv.writer(f, dialect='excel')
             wr.writerow([self.set_time, self.read_time_P_ac, self.read_time_P_bat, self.soc0, self.set_val, self.P_ac, self.P_bat])
 
-def max_self_consumption(parameter, ppv, pl, pvmod=True, max=True):
+def max_self_consumption(parameter, ppv, pl, pvmod=True):
 
     # Maximize self consumption for AC-coupled systems
     if parameter['Top'] == 'AC':
