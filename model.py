@@ -103,7 +103,6 @@ class BatModAC(object):
         self.ppv = ppv
         self.pl = pl
         self.Pr = Pr
-        self.Pbs = np.zeros_like(ppv)
         self.Ppv = Ppv
         self.Ppvs = Ppvs
         self.Pperi = Pperi
@@ -111,6 +110,7 @@ class BatModAC(object):
 
         # Initialization and preallocation
         self.Pbat = np.zeros_like(self.ppv)  # DC power of the battery in W
+        self.Pbs = np.zeros_like(ppv)
         self.soc = np.zeros_like(self.ppv)  # State of charge of the battery
         self.th = 0  # Start threshold for the recharging of the battery
         self.soc0 = 0  # State of charge of the battery in the first time step
@@ -118,21 +118,7 @@ class BatModAC(object):
 
         self.simulation()
 
-        mdic = {"Pbat_py": self.Pbat,
-                "Pbs_py": self.Pbs,
-                "Pr_py": self.Pr,
-                "Ppvs_py": self.Ppvs,
-                "Pperi_py": self.Pperi,
-                'pl_py': self.pl,
-                "ppv_py": self.ppv,
-                "soc_py": self.soc,
-                "Ppv_py": self.Ppv}
-
-        sio.savemat("python_export.mat", mdic, oned_as='column')
-
         self.bat_mod_res()
-
-        sio.savemat("python_export_E.mat", self.E, oned_as='column')
 
     def simulation(self, pvmod=True):
         # PerModAC: Performance Simulation Model for AC-coupled PV-Battery Systems
@@ -142,12 +128,13 @@ class BatModAC(object):
         '''
 
         # 3.3 Simulation of the battery system
-        #self.Pbat, self.Pbs, self.soc, self.soc0 = run_loss_AC(self.parameter['E_BAT'], self.parameter['eta_BAT'], self.parameter['t_CONSTANT'], self.parameter['P_SYS_SOC0_DC'], self.parameter['P_SYS_SOC0_AC'], self.parameter['P_SYS_SOC1_DC'], self.parameter['P_SYS_SOC1_AC'], self.parameter['AC2BAT_a_in'], self.parameter['AC2BAT_b_in'], self.parameter['AC2BAT_c_in'], self.parameter['BAT2AC_a_out'], self.parameter['BAT2AC_b_out'], self.parameter['BAT2AC_c_out'], self.parameter['P_AC2BAT_DEV'], self.parameter['P_BAT2AC_DEV'], self.parameter['P_BAT2AC_out'], self.parameter['P_AC2BAT_in'], round(self.parameter['t_DEAD']) , self.parameter['SOC_h'], self.dt, self.th, self.soc0, int(self.ppv.size), self.soc, self.Pr, self.Pbs, self.Pbat)
+        start = time.time()
         self.Pbat, self.Pbs, self.soc, self.soc0, self.Pbs0 = BatMod_AC(
             self.d, self.dt, self.soc0, self.soc, self.Pr, self.Pbs0, self.Pbs, self.Pbat)
-
+        end = time.time()
+        print('Elapsed time for BatMod_AC: ', end-start)
     def bat_mod_res(self):
-        self.E = model.bat_res_mod(
+        self.E = bat_res_mod(
             self.parameter, self.pl, self.Ppv, self.Pbat, self.dt, self.Ppvs, self.Pbs, self.Pperi)
 
     def get_E(self):
@@ -457,7 +444,6 @@ def max_self_consumption(parameter, ppv, pl, pvmod=True):
 @nb.jit(nopython=True)
 def BatMod_AC(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
     # Loading of particular variables
-
     _E_BAT = d[0]
     _eta_BAT = d[1]
     _t_CONSTANT = d[2]
@@ -637,7 +623,6 @@ def BatMod_AC(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
             _th = False
 
     return _Pbat, _Pbs, _soc, _soc0, _Pbs0
-
 
 @nb.jit(nopython=True)
 def BatMod_DC(d, _dt, _soc0, _soc, _Pr, _Prpv,  _Ppv, _Ppv2bat_in0, _Ppv2bat_in, _Pbat2ac_out0, _Pbat2ac_out, _Ppv2ac_out0, _Ppv2ac_out, _Ppvbs, _Pbat):

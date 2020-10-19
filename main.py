@@ -20,7 +20,7 @@ parameter = r'/Users/kairosken/Documents/Bachelorarbeit/PerMod 2.1/PerModPAR_PV_
 #fname_test = r'/Users/kairosken/Documents/Bachelorarbeit/Zeitreihe_Testlauf.csv'
 #File path for Linux
 #fname_test = r'/home/kai/Dokumente/openBatLib/Data/Zeitreihe_Testlauf.csv'
-system = 'G'
+system = 'H'
 ref_case = '1'
 
 #df_test_run = pd.read_csv(fname_test, index_col=0, parse_dates=True)
@@ -67,9 +67,9 @@ c.sim(fmat=mat, fparameter=parameter, system=system, ref_case=ref_case, dt=dt)
 
 #print('finished!')
 
-c.print_E()
+#c.print_E()
 
-c.E_to_csv(r'/Users/kairosken/Documents/Bachelorarbeit/Python/PV_py.csv')
+#c.E_to_csv(r'/Users/kairosken/Documents/Bachelorarbeit/Python/PV_py.csv')
 
 #c.plot()
 
