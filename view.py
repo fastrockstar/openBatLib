@@ -13,7 +13,7 @@ class View(object):
     def print_E(dict):
         print ("{:<10} {:<10}".format('Name','MWh'))
         for name, value in dict.items():
-            print('{:<10} {:<10}'.format(name, round(value, 15)))
+            print('{:<10} {:<10}'.format(name, round(value, 4)))
 
     @staticmethod
     def plot(input):

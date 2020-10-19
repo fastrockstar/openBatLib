@@ -50,7 +50,7 @@ def load_parameter(fname, col_name):
     # deletes entries where key is None
     del parameter[None]
 
-    # Assign specific parameters TODO
+    # Assign specific parameters
     parameter['P_PV2AC_out_PVINV'] = ws[col_name][15].value
     parameter['P_PV2AC_out'] = ws[col_name][24].value
     parameter['P_AC2BAT_in_DCC'] = ws[col_name][25].value
@@ -80,7 +80,7 @@ def load_parameter(fname, col_name):
     
     # Specific parameters of PV-coupled systems
     if parameter['Top'] == 'PV':
-        parameter['P_BAT2PV'] == parameter['P_BAT2AC_in']
+        parameter['P_BAT2PV_in'] = parameter['P_BAT2AC_in']
         parameter['P_BAT2AC_out'] = parameter['P_BAT2AC_out_DCC']
 
     # replace 'ns', 'o' and 'c' entries to None
@@ -252,7 +252,7 @@ def eta2abc(parameter):
         parameter['BAT2PV_c_in'] = p[2]
 
         # Based on output power
-        p = np.polyfit(p_bat2ac, P_l_bat2pv_out, 2)
+        p = np.polyfit(p_bat2pv, P_l_bat2pv_out, 2)
         parameter['BAT2PV_a_out'] = p[0]
         parameter['BAT2PV_b_out'] = p[1]
         parameter['BAT2PV_c_out'] = p[2]

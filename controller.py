@@ -47,7 +47,8 @@ class Controller(object):
         # Call model for PV-coupled systems
         elif parameter['Top'] == 'PV':
             Pac, Ppv, Pperi = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
-            self.model = model.BatModPV(parameter, ppv, pl, Pac, Ppv, Pperi)
+            d = model.transform_dict_to_array(parameter)
+            self.model = model.BatModPV(parameter, d, ppv, pl, Pac, Ppv, Pperi, dt)
 
         # Load the view class
         self.view = view.View()

@@ -7,23 +7,23 @@ import pandas as pd
 #mat = r"C:\Users\kroes\Nextcloud\Shares\09_Studierende\Persönliche Ordner\Kai\Bachelorarbeit\PerMod 2.1\PerModInput.mat"
 #mat = r'/home/kai/Dokumente/Bachelorarbeit/PerMod 2.1/PerModInput.mat'
 # File path for macOS
-#mat = r'/Users/kairosken/Documents/Bachelorarbeit/PerMod 2.1/PerModInput.mat'
+mat = r'/Users/kairosken/Documents/Bachelorarbeit/PerMod 2.1/PerModInput.mat'
 # File path for Linux
-mat = r'/home/kai/Dokumente/openBatLib/Data/PerModInput.mat'
+#mat = r'/home/kai/Dokumente/openBatLib/Data/PerModInput.mat'
 #parameter = r"C:\Users\kroes\Nextcloud\Shares\09_Studierende\Persönliche Ordner\Kai\Bachelorarbeit\PerMod 2.1\PerModPAR.xlsx"
 #parameter = r'/home/kai/Dokumente/Bachelorarbeit/PerMod 2.1/PerModPAR.xlsx'
 # File path to parameter macOS
-#parameter = r'/Users/kairosken/Documents/Bachelorarbeit/PerMod 2.1/PerModPAR.xlsx'
+parameter = r'/Users/kairosken/Documents/Bachelorarbeit/PerMod 2.1/PerModPAR_PV_debug.xlsx'
 # File path for Linux
-parameter = r'/home/kai/Dokumente/openBatLib/Data/PerModPAR.xlsx'
+#parameter = r'/home/kai/Dokumente/openBatLib/Data/PerModPAR.xlsx'
 # File path for macOS
 #fname_test = r'/Users/kairosken/Documents/Bachelorarbeit/Zeitreihe_Testlauf.csv'
 #File path for Linux
-fname_test = r'/home/kai/Dokumente/openBatLib/Data/Zeitreihe_Testlauf.csv'
+#fname_test = r'/home/kai/Dokumente/openBatLib/Data/Zeitreihe_Testlauf.csv'
 system = 'G'
 ref_case = '1'
 
-df_test_run = pd.read_csv(fname_test, index_col=0, parse_dates=True)
+#df_test_run = pd.read_csv(fname_test, index_col=0, parse_dates=True)
 
 dt = 1
 soc0 = 0.8 
@@ -50,7 +50,9 @@ c = controller.Controller()
 
 #Pbat, Pbs, soc, soc0 = c.real_time(params, _dt=dt, _soc0=soc0, _soc=soc, _Pr=Pr, _Pbs0=Pbs0, _Pbs=Pbs, _Pbat=Pbat)
 
-c.modbus(host=SERVER_HOST, port=SERVER_PORT, unit_id=UNIT_ID, data_frame=df_test_run, ref_case=ref_case, dt=dt, fname=csv_file, fparameter=parameter, fmat=mat, system=system)
+c.sim(fmat=mat, fparameter=parameter, system=system, ref_case=ref_case, dt=dt)
+
+#c.modbus(host=SERVER_HOST, port=SERVER_PORT, unit_id=UNIT_ID, data_frame=df_test_run, ref_case=ref_case, dt=dt, fname=csv_file, fparameter=parameter, fmat=mat, system=system)
 
 #Pr = mod.get_residual_power_AC(parameter=params,ppv=ppv_test, pl=pl_test)
 
@@ -59,15 +61,15 @@ c.modbus(host=SERVER_HOST, port=SERVER_PORT, unit_id=UNIT_ID, data_frame=df_test
 #print(soc0)
 #Pbat, Pbs, soc, soc0 = c.real_time(params, _dt=900, _soc0=soc0, _soc=soc, _Pr=Pr, _Pbs=Pbs, _Pbat=Pbat)
 #print(soc0)
-#c.sim(fmat=mat, fparameter=parameter, system=system, ref_case=ref_case, dt=dt)
+
 
 #mod.modbus(host=SERVER_HOST, port=SERVER_PORT, unit_id=UNIT_ID, input_vals=Pr, dt=dt, fname=csv_file)
 
-print('finished!')
+#print('finished!')
 
-#c.print_E()
+c.print_E()
 
-#c.E_to_csv('S3_py_est.csv')
+c.E_to_csv(r'/Users/kairosken/Documents/Bachelorarbeit/Python/PV_py.csv')
 
 #c.plot()
 
