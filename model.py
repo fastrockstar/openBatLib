@@ -70,7 +70,7 @@ class BatModDC(object):
         self.Ppv2bat = self.Ppv2bat_in  # DC input power of the PV2BAT conversion pathway
 
     def bat_mod_res(self):
-        self.E = model.bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat,
+        self.E = bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat,
                                    self.dt, self.Ppv2ac, self.Ppv2bat, self.Ppvbs, self.Pperi)
 
     def get_E(self):
