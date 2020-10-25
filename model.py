@@ -62,7 +62,7 @@ class BatModDC(object):
               2 Pr/Prpv anpassen 
         '''
 
-        self.Ppv2ac_out, self.Ppv2bat_in, self.Ppv2bat_in0, self.Pbat2ac_out, self.Pbat2ac_out0, self.Ppvbs, self.Pbat, self.soc, self.soc0 = BatMod_DC_(
+        self.Ppv2ac_out, self.Ppv2bat_in, self.Ppv2bat_in0, self.Pbat2ac_out, self.Pbat2ac_out0, self.Ppvbs, self.Pbat, self.soc, self.soc0 = BatMod_DC(
             self.d, self.dt, self.soc0, self.soc, self.Pr, self.Prpv,  self.Ppv, self.Ppv2bat_in0, self.Ppv2bat_in, self.Pbat2ac_out0, self.Pbat2ac_out, self.Ppv2ac_out0, self.Ppv2ac_out, self.Ppvbs, self.Pbat)
 
         # self.efine missing parameters
