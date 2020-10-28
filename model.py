@@ -62,8 +62,7 @@ class BatModDC(object):
               2 Pr/Prpv anpassen 
         '''
 
-        self.Ppv2ac_out, self.Ppv2bat_in, self.Ppv2bat_in0, self.Pbat2ac_out, self.Pbat2ac_out0, self.Ppvbs, self.Pbat, self.soc, self.soc0 = BatMod_DC(
-            self.d, self.dt, self.soc0, self.soc, self.Pr, self.Prpv,  self.Ppv, self.Ppv2bat_in0, self.Ppv2bat_in, self.Pbat2ac_out0, self.Pbat2ac_out, self.Ppv2ac_out0, self.Ppv2ac_out, self.Ppvbs, self.Pbat)
+        self.Ppv2ac_out, self.Ppv2bat_in, self.Ppv2bat_in0, self.Pbat2ac_out, self.Pbat2ac_out0, self.Ppvbs, self.Pbat, self.soc, self.soc0 = BatMod_DC(self.d, self.dt, self.soc0, self.soc, self.Pr, self.Prpv,  self.Ppv, self.Ppv2bat_in0, self.Ppv2bat_in, self.Pbat2ac_out0, self.Pbat2ac_out, self.Ppv2ac_out0, self.Ppv2ac_out, self.Ppvbs, self.Pbat)
 
         # self.efine missing parameters
         self.Ppv2ac = self.Ppv2ac_out  # AC output power of the PV2AC conversion pathway
@@ -127,12 +126,10 @@ class BatModAC(object):
               Pr anpassen
         '''
 
-        # 3.3 Simulation of the battery system
-        start = time.time()
+        # 3.3 Simulation of the battery system        
         self.Pbat, self.Pbs, self.soc, self.soc0, self.Pbs0 = BatMod_AC(
             self.d, self.dt, self.soc0, self.soc, self.Pr, self.Pbs0, self.Pbs, self.Pbat)
-        end = time.time()
-        print('Elapsed time for BatMod_AC: ', end-start)
+
     def bat_mod_res(self):
         self.E = bat_res_mod(
             self.parameter, self.pl, self.Ppv, self.Pbat, self.dt, self.Ppvs, self.Pbs, self.Pperi)
