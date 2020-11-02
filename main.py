@@ -13,7 +13,7 @@ mat = r'/Users/kairosken/Documents/Bachelorarbeit/PerMod 2.1/PerModInput.mat'
 #parameter = r"C:\Users\kroes\Nextcloud\Shares\09_Studierende\Persönliche Ordner\Kai\Bachelorarbeit\PerMod 2.1\PerModPAR.xlsx"
 #parameter = r'/home/kai/Dokumente/Bachelorarbeit/PerMod 2.1/PerModPAR.xlsx'
 # File path to parameter macOS
-parameter = r'/Users/kairosken/Documents/Bachelorarbeit/PerMod 2.1/PerModPAR_PV_debug.xlsx'
+parameter = r'/Users/kairosken/Documents/Bachelorarbeit/PerMod 2.1/PerModPAR.xlsx'
 # File path for Linux
 #parameter = r'/home/kai/Dokumente/openBatLib/Data/PerModPAR.xlsx'
 # File path for macOS
@@ -25,7 +25,7 @@ ref_case = '1'
 
 #df_test_run = pd.read_csv(fname_test, index_col=0, parse_dates=True)
 
-dt = 900
+dt = 1
 soc0 = 0.8 
 soc = np.array([0.0])
 Pr = np.array([100e3])
