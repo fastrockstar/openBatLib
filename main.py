@@ -13,14 +13,14 @@ mat = r'/Users/kairosken/Documents/Bachelorarbeit/PerMod 2.1/PerModInput.mat'
 #parameter = r"C:\Users\kroes\Nextcloud\Shares\09_Studierende\Persönliche Ordner\Kai\Bachelorarbeit\PerMod 2.1\PerModPAR.xlsx"
 #parameter = r'/home/kai/Dokumente/Bachelorarbeit/PerMod 2.1/PerModPAR.xlsx'
 # File path to parameter macOS
-parameter = r'/Users/kairosken/Documents/Bachelorarbeit/PerMod 2.1/PerModPAR.xlsx'
+parameter = r'/Users/kairosken/Documents/Bachelorarbeit/PerMod 2.1/PerModPAR_PV_debug.xlsx'
 # File path for Linux
 #parameter = r'/home/kai/Dokumente/openBatLib/Data/PerModPAR.xlsx'
 # File path for macOS
 #fname_test = r'/Users/kairosken/Documents/Bachelorarbeit/Zeitreihe_Testlauf.csv'
 #File path for Linux
 #fname_test = r'/home/kai/Dokumente/openBatLib/Data/Zeitreihe_Testlauf.csv'
-system = 'H'
+system = 'G'
 ref_case = '1'
 
 #df_test_run = pd.read_csv(fname_test, index_col=0, parse_dates=True)
@@ -33,8 +33,6 @@ Pbs = np.array([0.0])
 Pbs0 = 76.3
 Pbat = np.array([0.0])
 
-
-
 # File path for macOS
 #csv_file = '/Users/kairosken/Documents/Bachelorarbeit/Python/plenticore_Bl.csv'
 # File path for Linux PC
@@ -46,11 +44,15 @@ UNIT_ID = 71
 
 c = controller.Controller()
 
-params = c.get_parameter(fparameter=parameter, system=system)
+#params = c.get_parameter(fparameter=parameter, system=system)
 
-Pbat, Pbs, soc, soc0 = c.real_time(params, _dt=dt, _soc0=soc0, _soc=soc, _Pr=Pr, _Pbs0=Pbs0, _Pbs=Pbs, _Pbat=Pbat)
+#Pbat, Pbs, soc, soc0 = c.real_time(params, _dt=dt, _soc0=soc0, _soc=soc, _Pr=Pr, _Pbs0=Pbs0, _Pbs=Pbs, _Pbat=Pbat)
 
-#c.sim(fmat=mat, fparameter=parameter, system=system, ref_case=ref_case, dt=dt)
+c.sim(fmat=mat, fparameter=parameter, system=system, ref_case=ref_case, dt=dt)
+
+c.print_E()
+
+c.E_to_csv(r'/Users/kairosken/Documents/Bachelorarbeit/Python/Data Log/Energie/PV_15min_py.csv')
 
 #c.modbus(host=SERVER_HOST, port=SERVER_PORT, unit_id=UNIT_ID, data_frame=df_test_run, ref_case=ref_case, dt=dt, fname=csv_file, fparameter=parameter, fmat=mat, system=system)
 
@@ -67,9 +69,7 @@ Pbat, Pbs, soc, soc0 = c.real_time(params, _dt=dt, _soc0=soc0, _soc=soc, _Pr=Pr,
 
 #print('finished!')
 
-c.print_E()
 
-c.E_to_csv(r'/Users/kairosken/Documents/Bachelorarbeit/Python/Data Log/Energie/S2_py_est.csv')
 
 #c.plot()
 

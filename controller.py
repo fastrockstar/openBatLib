@@ -28,10 +28,10 @@ class Controller(object):
         
         # Load PV generator input
         ppv = self._load_pv_input(fmat, 'ppv')
-
+        
         # Load data from reference cases (load and inverter parameters)
         parameter, pl = self._load_ref_case(parameter, fmat, fparameter, ref_case)
-        '''
+        
         idx = pd.date_range(start='01.01.2016', periods=len(ppv), freq='S')
 
         df = pd.DataFrame(data=ppv, index=idx, columns=["ppv"])
@@ -43,7 +43,7 @@ class Controller(object):
         ppv = df['ppv'].to_numpy()
 
         pl = df['pl'].to_numpy()
-        '''
+        
         # Call model for AC coupled systems
         if parameter['Top'] == 'AC':
             Pr, Ppv, Ppvs, Pperi = model.max_self_consumption(parameter, ppv, pl, pvmod=True)

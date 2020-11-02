@@ -1308,7 +1308,7 @@ def bat_res_mod(_parameter, _Pl, _Ppv, _Pbat, _dt, *args):
 
 
 def resample_data_frame(df):
-    df_rs = df.resample('1min').mean()
+    df_rs = df.resample('15min').mean()
 
     return df_rs
 
