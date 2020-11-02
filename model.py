@@ -511,14 +511,14 @@ def BatMod_AC(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
         # Check if the battery holds enough unused capacity for charging or discharging
         # Estimated amount of energy in Wh that is supplied to or discharged from the storage unit.
         E_bs_est = P_bs * _dt / 3600
-
+        
         # Reduce P_bs to avoid over charging of the battery
         if E_bs_est > 0 and E_bs_est > (_E_BAT - E_b0):
-            P_bs = (_E_BAT - E_b0) / _dt * 3600
-        # When charging take the correction factor into account
+            P_bs = (_E_BAT - E_b0) * 3600 / _dt
+        # When discharging take the correction factor into account
         elif E_bs_est < 0 and np.abs(E_bs_est) > (E_b0):
-            P_bs = (E_b0) / _dt * 3600 * (1-corr)
-
+            P_bs = (E_b0 * 3600 / _dt) * (1-corr)
+        
         # Adjust the AC power of the battery system due to the stationary
         # deviations taking the minimum charging and discharging power into
         # account
@@ -698,13 +698,14 @@ def BatMod_DC(d, _dt, _soc0, _soc, _Pr, _Prpv,  _Ppv, _Ppv2bat_in0, _Ppv2bat_in,
         # Estimated amount of energy that is supplied to or discharged from the storage unit.
         E_bs_rpv = P_rpv * _dt / 3600
         E_bs_r = P_r * _dt / 3600
-
+        
+        # Reduce P_bs to avoid over charging of the battery 
         if E_bs_rpv > 0 and E_bs_rpv > (_E_BAT - E_b0):
-            P_rpv = (_E_BAT - E_b0) / _dt * 3600
-        # wenn Laden, dann neue Ladeleistung inkl. Korrekturfaktor
+            P_rpv = (_E_BAT - E_b0) * 3600 / _dt
+        # When discharging take the correction factor into account
         elif E_bs_r < 0 and np.abs(E_bs_r) > (E_b0):
-            P_r = (E_b0) / _dt * 3600 * (1-corr)
-
+            P_r = ((E_b0) * 3600 / _dt) * (1-corr)
+        
         # Decision if the battery should be charged or discharged
         if P_rpv > 0 and _soc0 < 1 - _th * (1 - _SOC_h):
             '''
@@ -943,13 +944,14 @@ def BatMod_PV(d, _dt, _soc0, _soc, _Ppv, _Pac, _Ppv2bat_in0, _Ppv2bat_in, _Ppv2a
         # Check if the battery holds enough unused capacity for charging or discharging
         # Estimated amount of energy that is supplied to or discharged from the storage unit.
         E_bs_rpv = P_rpv * _dt / 3600
-
+        
+        # Reduce P_bs to avoid over charging of the battery
         if E_bs_rpv > 0 and E_bs_rpv > (_E_BAT - E_b0):
-            P_rpv = (_E_BAT - E_b0) / _dt * 3600
+            P_rpv = ((_E_BAT - E_b0) * 3600) / _dt
         # When charging take the correction factor into account
         elif E_bs_rpv < 0 and np.abs(E_bs_rpv) > (E_b0):
-            P_rpv = (E_b0) / _dt * 3600 * (1-corr)
-
+            P_rpv = ((E_b0) * 3600 / _dt) * (1-corr)
+        
         # Decision if the battery should be charged or discharged
         if P_rpv > _P_PV2BAT_min and _soc0 < 1 - _th * (1 - _SOC_h):
             '''

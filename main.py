@@ -13,7 +13,7 @@ mat = r'/Users/kairosken/Documents/Bachelorarbeit/PerMod 2.1/PerModInput.mat'
 #parameter = r"C:\Users\kroes\Nextcloud\Shares\09_Studierende\Persönliche Ordner\Kai\Bachelorarbeit\PerMod 2.1\PerModPAR.xlsx"
 #parameter = r'/home/kai/Dokumente/Bachelorarbeit/PerMod 2.1/PerModPAR.xlsx'
 # File path to parameter macOS
-parameter = r'/Users/kairosken/Documents/Bachelorarbeit/PerMod 2.1/PerModPAR_PV_debug.xlsx'
+parameter = r'/Users/kairosken/Documents/Bachelorarbeit/PerMod 2.1/PerModPAR.xlsx'
 # File path for Linux
 #parameter = r'/home/kai/Dokumente/openBatLib/Data/PerModPAR.xlsx'
 # File path for macOS
@@ -25,10 +25,10 @@ ref_case = '1'
 
 #df_test_run = pd.read_csv(fname_test, index_col=0, parse_dates=True)
 
-dt = 1
+dt = 900
 soc0 = 0.8 
 soc = np.array([0.0])
-Pr = np.array([1000])
+Pr = np.array([100e3])
 Pbs = np.array([0.0])
 Pbs0 = 76.3
 Pbat = np.array([0.0])
@@ -46,11 +46,11 @@ UNIT_ID = 71
 
 c = controller.Controller()
 
-#paramas = c.get_parameter(fparameter=parameter, system=system)
+params = c.get_parameter(fparameter=parameter, system=system)
 
-#Pbat, Pbs, soc, soc0 = c.real_time(params, _dt=dt, _soc0=soc0, _soc=soc, _Pr=Pr, _Pbs0=Pbs0, _Pbs=Pbs, _Pbat=Pbat)
+Pbat, Pbs, soc, soc0 = c.real_time(params, _dt=dt, _soc0=soc0, _soc=soc, _Pr=Pr, _Pbs0=Pbs0, _Pbs=Pbs, _Pbat=Pbat)
 
-c.sim(fmat=mat, fparameter=parameter, system=system, ref_case=ref_case, dt=dt)
+#c.sim(fmat=mat, fparameter=parameter, system=system, ref_case=ref_case, dt=dt)
 
 #c.modbus(host=SERVER_HOST, port=SERVER_PORT, unit_id=UNIT_ID, data_frame=df_test_run, ref_case=ref_case, dt=dt, fname=csv_file, fparameter=parameter, fmat=mat, system=system)
 
@@ -67,9 +67,9 @@ c.sim(fmat=mat, fparameter=parameter, system=system, ref_case=ref_case, dt=dt)
 
 #print('finished!')
 
-#c.print_E()
+c.print_E()
 
-#c.E_to_csv(r'/Users/kairosken/Documents/Bachelorarbeit/Python/PV_py.csv')
+c.E_to_csv(r'/Users/kairosken/Documents/Bachelorarbeit/Python/Data Log/Energie/S2_py_est.csv')
 
 #c.plot()
 
