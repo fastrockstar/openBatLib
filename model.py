@@ -348,8 +348,7 @@ def max_self_consumption(parameter, ppv, pl, pvmod=True):
 
         # AC power output of the PV inverter taking into account the conversion losses and maximum
         # output power of the PV inverter
-        Ppvs = np.minimum(np.maximum(0, Ppv-(parameter['PV2AC_a_in'] * ppvinvin * ppvinvin +
-                                             parameter['PV2AC_b_in'] * ppvinvin + parameter['PV2AC_c_in'])), parameter['P_PV2AC_out'] * 1000)
+        Ppvs = np.minimum(np.maximum(0, Ppv-(parameter['PV2AC_a_in'] * ppvinvin * ppvinvin + parameter['PV2AC_b_in'] * ppvinvin + parameter['PV2AC_c_in'])), parameter['P_PV2AC_out'] * 1000)
 
         # 3.2 Residual power
 
@@ -541,11 +540,9 @@ def BatMod_AC(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
         # Muss der vorherige Wert mit übergeben werden?
         if SETTLING:
             if t > 0:
-                P_bs = _tde * _Pbs[t-1] + _tde * \
-                    (P_bs - _Pbs[t-1]) * _ftde + P_bs * (not _tde)
+                P_bs = _tde * _Pbs[t-1] + _tde * (P_bs - _Pbs[t-1]) * _ftde + P_bs * (not _tde)
             else:
-                P_bs = _tde * _Pbs0 + _tde * \
-                    (P_bs - _Pbs0) * _ftde + P_bs * (not _tde)
+                P_bs = _tde * _Pbs0 + _tde * (P_bs - _Pbs0) * _ftde + P_bs * (not _tde)
 
         # Decision if the battery should be charged or discharged
         if P_bs > 0 and _soc0 < 1 - _th * (1 - _SOC_h):
@@ -734,6 +731,7 @@ def BatMod_DC(d, _dt, _soc0, _soc, _Pr, _Prpv,  _Ppv, _Ppv2bat_in0, _Ppv2bat_in,
                     P_pv2bat_in = _tde * _Ppv2bat_in0 + _tde * \
                         (P_pv2bat_in - _Ppv2bat_in0) * \
                         _ftde + P_pv2bat_in * (not _tde)
+                        
             # Limit the charging power to the current power output of the PV generator
             P_pv2bat_in = np.minimum(P_pv2bat_in, _Ppv[t])
 
