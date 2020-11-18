@@ -61,9 +61,9 @@ class BatModDC(object):
         TODO: 1 Warum ppv2ac doppelt
               2 Pr/Prpv anpassen 
         '''
-
+        #start = time.process_time()     
         self.Ppv2ac_out, self.Ppv2bat_in, self.Ppv2bat_in0, self.Pbat2ac_out, self.Pbat2ac_out0, self.Ppvbs, self.Pbat, self.soc, self.soc0 = BatMod_DC(self.d, self.dt, self.soc0, self.soc, self.Pr, self.Prpv,  self.Ppv, self.Ppv2bat_in0, self.Ppv2bat_in, self.Pbat2ac_out0, self.Pbat2ac_out, self.Ppv2ac_out0, self.Ppv2ac_out, self.Ppvbs, self.Pbat)
-
+        #print(time.process_time()-start)
         # self.efine missing parameters
         self.Ppv2ac = self.Ppv2ac_out  # AC output power of the PV2AC conversion pathway
         self.Ppv2bat = self.Ppv2bat_in  # DC input power of the PV2BAT conversion pathway
@@ -126,10 +126,11 @@ class BatModAC(object):
               Pr anpassen
         '''
 
-        # 3.3 Simulation of the battery system        
+        # 3.3 Simulation of the battery system   
+        #start = time.process_time()     
         self.Pbat, self.Pbs, self.soc, self.soc0, self.Pbs0 = BatMod_AC(
             self.d, self.dt, self.soc0, self.soc, self.Pr, self.Pbs0, self.Pbs, self.Pbat)
-
+        #print(time.process_time()-start)
     def bat_mod_res(self):
         self.E = bat_res_mod(
             self.parameter, self.pl, self.Ppv, self.Pbat, self.dt, self.Ppvs, self.Pbs, self.Pperi)
@@ -195,8 +196,9 @@ class BatModPV(object):
         self.soc0 = 0  # Initial state of charge of the battery in the first time step
 
         # Simulation of the battery system
+        #start = time.process_time()
         self.soc, self.soc0, self.Ppv, self.Ppvbs, self.Pbat, self.Ppv2ac_out, self.Pbat2pv_out, self.Ppv2bat_in = BatMod_PV(self.d, self.dt, self.soc0, self.soc, self.Ppv, self.Pac, self.Ppv2bat_in0, self.Ppv2bat_in, self.Ppv2ac_out, self.Pbat2pv_out0, self.Pbat2pv_out, self.Ppvbs, self.Pbat)
-
+        #print(time.process_time()-start)
         # Define missing parameters
         self.Ppv2ac = self.Ppv2ac_out  # AC output power of the PV2AC conversion pathway
         self.Ppv2bat = self.Ppv2bat_in  # DC input power of the PV2BAT conversion pathway
