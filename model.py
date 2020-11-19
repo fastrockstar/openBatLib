@@ -142,16 +142,7 @@ class BatModAC(object):
         self.Pbat, self.Pbs, self.soc, self.soc0, self.Pbs0 = BatMod_AC(
             self.d, self.dt, self.soc0, self.soc, self.Pr, self.Pbs0, self.Pbs, self.Pbat)
         #print(time.process_time()-start)
-        '''
-        print('start to csv...')
-        idx = pd.date_range(start='01.01.2016', periods=len(self.Ppv), freq='S')
 
-        df = pd.DataFrame(data=self.Ppv, index=idx, columns=["Ppv"])
-        df['Pr'] = self.Pr
-        df['Pbat'] = self.Pbat
-
-        df.to_pickle('/Users/kairosken/Documents/Bachelorarbeit/Python/Data Log/Energie/df_dt_1_sec_DC.pkl')
-        '''
         
     def bat_mod_res(self):
         self.E = bat_res_mod(
