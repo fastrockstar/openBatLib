@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from numba import types
 from numba.typed import Dict
 from numba import njit
