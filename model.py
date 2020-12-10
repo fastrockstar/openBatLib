@@ -14,7 +14,7 @@ from pyModbusTCP import utils
 
 
 class BatModDC(object):
-    """Performance Simulation Model for DC-coupled PV-Battery systems
+    """Performance Simulation Class for DC-coupled PV-Battery systems
 
     :param object: object
     :type object: object
@@ -57,28 +57,13 @@ class BatModDC(object):
         self.bat_mod_res()
 
     def simulation(self, pvmod=True):
-        '''
-        TODO: 1 Warum ppv2ac doppelt
-              2 Pr/Prpv anpassen 
-        '''
-        #start = time.process_time()     
+
         self.Ppv2ac_out, self.Ppv2bat_in, self.Ppv2bat_in0, self.Pbat2ac_out, self.Pbat2ac_out0, self.Ppvbs, self.Pbat, self.soc, self.soc0 = BatMod_DC(self.d, self.dt, self.soc0, self.soc, self.Pr, self.Prpv,  self.Ppv, self.Ppv2bat_in0, self.Ppv2bat_in, self.Pbat2ac_out0, self.Pbat2ac_out, self.Ppv2ac_out0, self.Ppv2ac_out, self.Ppvbs, self.Pbat)
-        #print(time.process_time()-start)
-        # self.efine missing parameters
+        
+        # Define missing parameters
         self.Ppv2ac = self.Ppv2ac_out  # AC output power of the PV2AC conversion pathway
         self.Ppv2bat = self.Ppv2bat_in  # DC input power of the PV2BAT conversion pathway
-        '''
-        print('start to csv...')
-        idx = pd.date_range(start='01.01.2016', periods=len(self.Ppv), freq='900S')
 
-        df = pd.DataFrame(data=self.Ppv, index=idx, columns=["Ppv"])
-        df['Pr'] = self.Pr
-        df['Prpv'] = self.Prpv
-        df['Pbat'] = self.Pbat
-        df['soc'] = self.soc
-
-        df.to_pickle('/Users/kairosken/Documents/Bachelorarbeit/Python/Data Log/Energie/df_dt_15_min_DC.pkl')
-        '''
     def bat_mod_res(self):
         self.E = bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat,
                                    self.dt, self.Ppv2ac, self.Ppv2bat, self.Ppvbs, self.Pperi)
@@ -87,12 +72,6 @@ class BatModDC(object):
         return self.E
 
     def get_soc(self):
-        '''
-        idx = pd.date_range(start='00:00:00', periods=len(self.soc), freq='S')
-        _soc = pd.Series(self.soc, index=idx)
-        soc_1h = _soc.resample('1h').sum()
-        soc_1h = soc_1h.to_numpy()
-        '''
         return self.soc
 
     def get_Pbat(self):
@@ -100,7 +79,7 @@ class BatModDC(object):
 
 
 class BatModAC(object):
-    """Performance Simulation Model for AC-coupled PV-Battery systems
+    """Performance Simulation Class for AC-coupled PV-Battery systems
 
     :param object: object
     :type object: object
@@ -168,7 +147,7 @@ class BatModAC(object):
 
 
 class BatModPV(object):
-    """Performance Simulation Model for PV-coupled PV-Battery systems
+    """Performance Simulation Class for PV-coupled PV-Battery systems
 
     :param object: object
     :type object: object
@@ -347,7 +326,12 @@ class ModBus(object):
 
 
 def max_self_consumption(parameter, ppv, pl, pvmod=True):
+    """Function for maximizing self consumption
 
+    :param object: object
+    :ppv object: object
+    :pl object: object
+    """
     # Maximize self consumption for AC-coupled systems
     if parameter['Top'] == 'AC':
 
@@ -454,6 +438,23 @@ def max_self_consumption(parameter, ppv, pl, pvmod=True):
 
 @nb.jit(nopython=True)
 def BatMod_AC(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
+    """Performance Simulation function for AC-coupled battery systems
+
+    :param d: array containing parameters
+    :type d: numpy array
+    :param dt: time step width
+    :type dt: integer
+    :param soc0: state of charge in the previous time step
+    :type soc0: float
+    :param Pr: residual power
+    :type Pr: numpy array
+    :param Pbs0: AC-power of the battery system in the previous time step
+    :type Pbs0: float
+    :param Pbs: AC-power of the battery syste
+    :type Pbs: numpy array
+    :param Pbat: DC-power oof the battery
+    :type Pbat: numpy array
+    """
     # Loading of particular variables
     _E_BAT = d[0]
     _eta_BAT = d[1]
@@ -635,9 +636,37 @@ def BatMod_AC(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
 
 @nb.jit(nopython=True)
 def BatMod_DC(d, _dt, _soc0, _soc, _Pr, _Prpv,  _Ppv, _Ppv2bat_in0, _Ppv2bat_in, _Pbat2ac_out0, _Pbat2ac_out, _Ppv2ac_out0, _Ppv2ac_out, _Ppvbs, _Pbat):
-    '''
-    TODO 1 t_start auf das 2. Element?
-    '''
+    """Performance simulation function for DC-coupled battery systems
+
+    :param d: array containing parameters
+    :type d: numpy array
+    :param dt: time step width
+    :type dt: integer
+    :param soc0: state of charge in the previous time step
+    :type soc0: float
+    :param Pr: residual power
+    :type Pr: numpy array
+    :param Prpv: residual power of the PV-system
+    :type Prpv: numpy array
+    :param Ppv: PV-power
+    :type Ppv: numpy array
+    :param Ppv2bat_in0: AC input power of the battery system in the previous time step
+    :type Ppv2bat_in0: float
+    :param Ppv2bat_in: AC input power of the battery system
+    :type Ppv2bat_in: numpy array
+    :param Pbat2ac_out0: AC output power of the battery system in the previous time step
+    :type Pbat2ac_out0: float
+    :param Pbat2ac_out: AC output power of the battery system
+    :type Pbat2ac_out: numpy array
+    :param Ppv2ac_out0: AC output power of the PV inverter in the previous time step
+    :type Ppv2ac_out0: float
+    :param Ppv2ac_out: AC output power of the PV inverter
+    :type Ppv2ac_out: numpy array
+    :param Ppvbs: AC power from the PV system to the battery system
+    :type Ppvbs: numpy array
+    :param Pbat: DC power of the battery
+    :type Pbat: float
+    """
 
     _E_BAT = d[0]
     _P_PV2AC_in = d[1]
@@ -870,6 +899,48 @@ def BatMod_DC(d, _dt, _soc0, _soc, _Pr, _Prpv,  _Ppv, _Ppv2bat_in0, _Ppv2bat_in,
 
 @nb.jit(nopython=True)
 def BatMod_PV(d, _dt, _soc0, _soc, _Ppv, _Pac, _Ppv2bat_in0, _Ppv2bat_in, _Ppv2ac_out, _Pbat2pv_out0, _Pbat2pv_out, _Ppvbs, _Pbat):
+    """Performance simulation function for PV-coupled battery systems
+
+    :param d: array containing parameters
+    :type d: numpy array
+
+    :param dt: time step width
+    :type dt: integer
+
+    :param soc0: state of charge of the battery in the previous time step
+    :type soc0: float
+
+    :param soc: state of charge of the battery
+    :type soc: numpy array
+
+    :param Pr: residual power
+    :type Pr: numpy array
+
+    :param Ppv: PV-power
+    :type Ppv: numpy array
+
+    :param Pac: AC output power of the PV inverter
+    :type Pac: numpy array
+
+    :param Ppv2bat_in: AC input power of the battery system
+    :type Ppv2bat_in: numpy array
+
+    :param Ppv2bat_in0: AC input power of the battery system in the previous time step
+    :type Ppv2bat_in0: float
+
+    :param Pbat2pv_out0: AC output power of the battery system in the previous time step
+    :type Pbat2pv_out0: float
+
+    :param Pbat2pv_out: AC output power of the battery system
+    :type Pbat2pv_out: numpy array
+
+    :param Ppvbs: AC power from the PV system to the battery system
+    :type Ppvbs: numpy array
+
+    :param Pbat: DC power of the battery
+    :type Pbat: float
+    """
+
     # Initialization of particular variables
 
     _E_BAT = d[0]
@@ -1129,13 +1200,22 @@ def BatMod_PV(d, _dt, _soc0, _soc, _Ppv, _Pac, _Ppv2bat_in0, _Ppv2bat_in, _Ppv2a
 
     return _soc, _soc0, _Ppv, _Ppvbs, _Pbat, _Ppv2ac_out, _Pbat2pv_out, _Ppv2bat_in
 
-
 def bat_res_mod(_parameter, _Pl, _Ppv, _Pbat, _dt, *args):
-    '''
-    TODO
-    Bei der Umwandlung zu MWh dt brücksichtigen!
-    '''
+    """Function for calculating energy sums
 
+    :param _parameter: parameter of the system
+    :type _parameter: dict
+    :param _Pl: load power
+    :type _Pl: numpy array
+    :param _Ppv: output power of the PV generator
+    :type _Ppv: numpy array
+    :param _Pbat: DC power of the battery
+    :type _Pbat: numpy array
+    :param _dt: time step width
+    :type _dt: integer
+    :return: energy sums
+    :rtype: dict
+    """
     _E = dict()
 
     if _parameter['Top'] == 'AC':  # AC-coupled systems
@@ -1263,8 +1343,7 @@ def bat_res_mod(_parameter, _Pl, _Ppv, _Pbat, _dt, *args):
         # Power demand from the grid
         _Pg2ac = np.minimum(0, _Pg)
 
-    # 2. Energy sums
-    # All variables in MWh
+    # Energy sums in MWH
 
     # Electrical demand including the energy consumption of the other system components
     _E['El'] = np.sum(np.abs(_Plt)) * _dt / 3.6e9
@@ -1321,13 +1400,26 @@ def bat_res_mod(_parameter, _Pl, _Ppv, _Pbat, _dt, *args):
 
 
 def resample_data_frame(df):
+    """Function for resampling data frames
+
+    :param df: data frame
+    :type df: pandas data frame
+    :return: data frame
+    :rtype: pandas data frame
+    """
     df_rs = df.resample('15min').mean()
 
     return df_rs
 
 
 def transform_dict_to_array(parameter):
-    #
+    """Function for transforming a dict to an numpy array
+
+    :param parameter: dict of system parameters
+    :type parameter: dict
+    :return: array of system parameters
+    :rtype: numpy array
+    """
     if parameter['Top'] == 'AC':
         d = np.array(parameter['E_BAT'])                # 0
         d = np.append(d, parameter['eta_BAT'])          # 1
@@ -1403,20 +1495,3 @@ def transform_dict_to_array(parameter):
 
     return d
 
-# Hier eine Kopie der Schleifen aus tools anlegen als eigene Klassen mit bestimmten Übergabe Paramtern? Was braucht die Schleife unbedingt für Werte
-# Dies sind Pr, Pbs, soc0, und parameter aus der Excel Datei. Geht dies mit numba? Ist numba noch nötig, da nur ein Durchlauf passiert? Dann kan auch ohne Probleme ein Dict
-# übergeben werden. Dies wird dann in der Schleife ausgelesen.
-# Eigene KLasse anlegen real_time die auf tools zugreift, so wie die Simulationen? Wie mit den Parametern umgehen?
-# Der Weg Aufruf durch die Main -> Conrol -> Aufruf des Models -> zurück an die Control -> Aufrufen der View -> sichern als Data Frame return. Welcher Inhalt. soc Pbat Pbs usw.
-# soc0 ist ein eigener Wert. auslesen aus dem letzten soc?
-# Danach ein erneuter Aufruf mit dem gleichen Data Frame, die neuen Werte werden angehängt
-# Oder doch nur Pbs übergeben, so dass das Modul si durchlaufen kann? Also auf Pr etc. verzichten. Im ersten Durchlauf ist auch Pbs noch 0.
-# Für das Dc MOdell müssen andere Parameter übergeben werden, hier gibt es eine eigene Leistung zum Laden Pr und Prpv und Entladen der Batterie.
-# Hier werden auch Pbat und Pbs zurück gegeben
-# Darauf achten, dass die Variablen alle richtig durchgehen.
-# Den Treshold zwischenspeichern und zurückgeben für die nächste Iteration der Schleife
-# Alle Variablen noch sinnvol bennenen
-# BatMod_PV Debuffen, dazu die Parameter aus der Dissertation extrahierne
-# Den d Parameter für BatMod_PV richtig bilden
-# Welche Eingangsreihen wird für den Langzeittest verwendet werden. EIne echte Zeitreihe? Wie groß dürfen die Daten sein. Die PV-Anlage der Hochschule ist hierfür zu groß.
-# Arrays als Zwischenspeixher verwenden, wenn nicht in die CSV geschrieben werden konnte
