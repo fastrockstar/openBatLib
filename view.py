@@ -48,3 +48,4 @@ class View(object):
     def store_to_pickle(fname, data):
         with open(fname, 'wb') as f:
             np.save(f, data)
+# End
