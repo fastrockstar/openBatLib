@@ -7,7 +7,7 @@ from numba import njit
 import model
 import view
 
-import tools
+#import tools
 
 class Controller(object):
     """Class to manage the models and view components
@@ -87,8 +87,8 @@ class Controller(object):
         :param system: Indicator for the system
         :type system: string
         """
-        parameter = tools.load_parameter(fparameter, system)
-        parameter = tools.eta2abc(parameter)
+        parameter = model.load_parameter(fparameter, system)
+        parameter = model.eta2abc(parameter)
 
         return parameter
 
@@ -111,7 +111,7 @@ class Controller(object):
         :param name: Name of the input series
         :type name: string
         """
-        ppv = tools.load_mat(fmat, name)
+        ppv = model.load_mat(fmat, name)
 
         return ppv
 
@@ -123,21 +123,21 @@ class Controller(object):
         if ref_case == '1':
             # Load parameters of first inverter
             if parameter['Top'] == 'AC' or parameter['Top'] == 'PV':
-                inverter_parameter = tools.load_parameter(fparameter, 'L')            
+                inverter_parameter = model.load_parameter(fparameter, 'L')            
             parameter['P_PV'] = 5.0
-            pl = tools.load_mat(fmat, 'Pl1')
+            pl = model.load_mat(fmat, 'Pl1')
                                         
         elif ref_case == '2':
             # Load paramertes of second inverter
             if parameter['Top'] == 'AC' or parameter['Top'] == 'PV':
-                inverter_parameter = tools.load_parameter(fparameter, 'M')            
+                inverter_parameter = model.load_parameter(fparameter, 'M')            
             parameter['P_PV'] = 10
-            pl = tools.load_mat(fmat, 'Pl2')
+            pl = model.load_mat(fmat, 'Pl2')
 
         # Load inverter parameters for AC or PV coupled systems
         if parameter['Top'] == 'AC' or parameter['Top'] == 'PV':
 
-            inverter_parameter = tools.eta2abc(inverter_parameter)
+            inverter_parameter = model.eta2abc(inverter_parameter)
 
             parameter['P_PV2AC_in'] = inverter_parameter['P_PV2AC_in']
             parameter['P_PV2AC_out']= inverter_parameter['P_PV2AC_out']

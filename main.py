@@ -52,7 +52,7 @@ c.sim(fmat=mat, fparameter=parameter, system=system, ref_case=ref_case, dt=dt)
 
 c.print_E()
 
-c.E_to_csv(r'/Users/kairosken/Documents/Bachelorarbeit/Python/Data Log/Energie/S2_py_neu.csv')
+#c.E_to_csv(r'/Users/kairosken/Documents/Bachelorarbeit/Python/Data Log/Energie/S2_py_neu.csv')
 
 #c.modbus(host=SERVER_HOST, port=SERVER_PORT, unit_id=UNIT_ID, data_frame=df_test_run, ref_case=ref_case, dt=dt, fname=csv_file, fparameter=parameter, fmat=mat, system=system)
 
