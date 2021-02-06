@@ -36,7 +36,7 @@ Pbat = np.array([0.0])
 # File path for macOS
 #csv_file = '/Users/kairosken/Documents/Bachelorarbeit/Python/plenticore_Bl.csv'
 # File path for Linux PC
-csv_file = '/home/kai/Dokumente/openBatLib/Data/plenticore_Bl_test_run_1_week.csv'
+#csv_file = '/home/kai/Dokumente/openBatLib/Data/plenticore_Bl_test_run_1_week.csv'
 
 SERVER_HOST = "192.168.208.106"
 SERVER_PORT = 1502
@@ -52,7 +52,7 @@ c.sim(fmat=mat, fparameter=parameter, system=system, ref_case=ref_case, dt=dt)
 
 c.print_E()
 
-#c.E_to_csv(r'/Users/kairosken/Documents/Bachelorarbeit/Python/Data Log/Energie/PV_15min_py.csv')
+c.E_to_csv(r'/Users/kairosken/Documents/Bachelorarbeit/Python/Data Log/Energie/S2_py_neu.csv')
 
 #c.modbus(host=SERVER_HOST, port=SERVER_PORT, unit_id=UNIT_ID, data_frame=df_test_run, ref_case=ref_case, dt=dt, fname=csv_file, fparameter=parameter, fmat=mat, system=system)
 
