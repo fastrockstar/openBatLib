@@ -23,6 +23,12 @@ parameter = r'/Users/kairosken/Documents/Bachelorarbeit/PerMod 2.1/PerModPAR.xls
 system = 'H'
 ref_case = '1'
 
+cwd = os.getcwd()
+
+mat = os.path.join(cwd, 'reference_case/PerModInput.mat')
+
+print(mat)
+
 #df_test_run = pd.read_csv(fname_test, index_col=0, parse_dates=True)
 
 dt = 1
