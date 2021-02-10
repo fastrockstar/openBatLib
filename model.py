@@ -1705,7 +1705,6 @@ def resample_data_frame(df):
 
     return df_rs
 
-
 def transform_dict_to_array(parameter):
     """Function for transforming a dict to an numpy array
 
@@ -1788,4 +1787,3 @@ def transform_dict_to_array(parameter):
         d = np.append(d, parameter['t_CONSTANT'])
 
     return d
-

@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import os
 from numba import types
 from numba.typed import Dict
 from numba import njit
@@ -26,11 +27,17 @@ class Controller(object):
         # Load system parameters
         parameter = self._load_parameter(fparameter, system)
         
+        # get path to working directory
+        cwd = os.getcwd()
+
+        # set path to the refence case file
+        fname = os.path.join(cwd, 'reference_case/ref_case_data.npz')
+        
         # Load PV generator input
-        ppv = self._load_pv_input(fmat, 'ppv')
+        ppv = self._load_pv_input(fname, 'ppv')
         
         # Load data from reference cases (load and inverter parameters)
-        parameter, pl = self._load_ref_case(parameter, fmat, fparameter, ref_case)
+        parameter, pl = self._load_ref_case(parameter, fname, fparameter, ref_case)
 
         # Call model for AC coupled systems
         if parameter['Top'] == 'AC':
@@ -103,7 +110,7 @@ class Controller(object):
     def get_parameter(self, fparameter, system):
         return self._load_parameter(fparameter, system)
 
-    def _load_pv_input(self, fmat, name):
+    def _load_pv_input(self, fname, name):
         """Loads PV input data
 
         :param fmat: Path to file
@@ -111,30 +118,28 @@ class Controller(object):
         :param name: Name of the input series
         :type name: string
         """
-        ppv = model.load_mat(fmat, name)
-
-        ppv = model.load_ref_case(fmat, name)
+        ppv = model.load_ref_case(fname, name)
 
         return ppv
 
     def _load_set_values(self, fname):
         return fname
 
-    def _load_ref_case(self, parameter, fmat, fparameter, ref_case):
+    def _load_ref_case(self, parameter, fname, fparameter, ref_case):
             
         if ref_case == '1':
             # Load parameters of first inverter
             if parameter['Top'] == 'AC' or parameter['Top'] == 'PV':
                 inverter_parameter = model.load_parameter(fparameter, 'L')            
             parameter['P_PV'] = 5.0
-            pl = model.load_mat(fmat, 'Pl1')
+            pl = model.load_ref_case(fname, 'pl1')
                                         
         elif ref_case == '2':
             # Load paramertes of second inverter
             if parameter['Top'] == 'AC' or parameter['Top'] == 'PV':
                 inverter_parameter = model.load_parameter(fparameter, 'M')            
             parameter['P_PV'] = 10
-            pl = model.load_mat(fmat, 'Pl2')
+            pl = model.load_ref_case(fname, 'pl2')
 
         # Load inverter parameters for AC or PV coupled systems
         if parameter['Top'] == 'AC' or parameter['Top'] == 'PV':
