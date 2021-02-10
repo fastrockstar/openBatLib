@@ -113,6 +113,8 @@ class Controller(object):
         """
         ppv = model.load_mat(fmat, name)
 
+        ppv = model.load_ref_case(fmat, name)
+
         return ppv
 
     def _load_set_values(self, fname):

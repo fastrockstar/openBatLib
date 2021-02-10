@@ -1683,6 +1683,16 @@ def load_mat(fname, name):
     
     return data 
 
+def load_ref_case(fname, name):
+
+    with open(fname, 'rb') as f:
+
+        a = np.load(f)
+
+        data = a[name]
+    
+    return data
+
 def resample_data_frame(df):
     """Function for resampling data frames
 
