@@ -8,8 +8,6 @@ from numba import njit
 import model
 import view
 
-#import tools
-
 class Controller(object):
     """Class to manage the models and view components
 
