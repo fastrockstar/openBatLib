@@ -10,17 +10,32 @@ import view
 
 class Controller(object):
     """Class to manage the models and view components
-
-    :param object: object
-    :type object: object
     """
     _version = '0.1'
 
     def __init__(self):
+        """Constructor method
+        """
 
         self.view = view.View()
 
-    def sim(self, fmat, fparameter, system, ref_case, dt=1):
+    def sim(self, fref, fparameter, system, ref_case, dt=1):
+        """Method for managing the simulation
+        :param fref: File path to the refernce case
+        :type fref: string
+
+        :param fparameter: File path to the system parameters
+        :type fparameter: string
+
+        :param system: Identifier for the system under simulation in the file
+        :type system: string
+
+        :param ref_case: Indentifier for to chosse one of the two reference cases
+        :type ref_case: string
+
+        :param dt: time step width in seconds
+        :type dt: integer
+        """
         
         # Load system parameters
         parameter = self._load_parameter(fparameter, system)
@@ -58,13 +73,36 @@ class Controller(object):
         # Load the view class
         self.view = view.View()
     
-    def modbus(self, host, port, unit_id, data_frame, ref_case, dt, fname, fparameter, fmat, system):
+    def modbus(self, host, port, unit_id, data_frame, ref_case, dt, fname, fparameter, fref, system):
+        """Function to establish a connection to a battery system via ModBus protocol
+
+        :param host: IP-Address of the host
+        :type host: string
+        :param port: Port of the host
+        :type port: integer
+        :param unit_id: Unit-ID of the host
+        :type unit_id: integer
+        :param data_frame: Data Frame holding the values
+        :type data_frame: pandas data frame
+        :param ref_case: Identifier for one of the two reference cases
+        :type ref_case: string
+        :param dt: Time step width in seconds
+        :type dt: integer
+        :param fname: File path to the system under simulation
+        :type fname: string
+        :param fparameter: File path to the system parameters
+        :type fparameter: string
+        :param fref: File to the refence cases
+        :type fref: string
+        :param system: Indentifier for the system under simulation
+        :type system: string
+        """
         parameter = self._load_parameter(fparameter, system)
         #df_resample = model.resample_data_frame(df=data_frame)
 
         ppv = data_frame['ppv'].to_numpy()
         pl = data_frame['L'].to_numpy()
-        parameter, pl_not_used = self._load_ref_case(parameter, fmat, fparameter, ref_case)
+        parameter, pl_not_used = self._load_ref_case(parameter, fref, fparameter, ref_case)
 
         Pr, Ppv_not_used, Ppvs_not_used, Pperi_not_used = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
 
@@ -73,14 +111,28 @@ class Controller(object):
         self.model = model.ModBus(host, port, unit_id, Pr, dt, fname)
 
     def real_time(self, parameter, **kwargs):
+        """Function for direct access to the battery models
+
+        :param parameter: PV battery system parameters
+        :type parameter: dict
+        
+        :return r: Dictionary of the simulation results
+        :rtype r: dict
+        """
+        r = dict() # Dictionary storing the results
         if parameter['Top'] == 'AC':
             d = self._dict_to_array(parameter)
-            Pbat, Pbs, soc, soc0 = model.BatMod_AC(d, **kwargs)
-            return Pbat, Pbs, soc, soc0
+            r['Pbat'], r['Pbs'], r['soc'], r['soc0'] = model.BatMod_AC(d, **kwargs)
+             
+            return r
+        
         elif type == 'DC':
             d = self._dict_to_array(parameter)
-            Ppv2ac_out, Ppv2bat_in, Ppv2bat_in0, Pbat2ac_out, Pbat2ac_out0, Ppvbs, Pbat, soc, soc0 = model.BatMod_DC(d, **kwargs)
-            return Ppv2ac_out, Ppv2bat_in, Ppv2bat_in0, Pbat2ac_out, Pbat2ac_out0, Ppvbs, Pbat, soc, soc0
+            r['Ppv2ac_out'], r['Ppv2bat_in'], r['Ppv2bat_in0'], r['Pbat2ac_out'], r['Pbat2ac_out0'], r['Ppvbs'],
+            r['Pbat'], r['soc'], r['soc0'] = model.BatMod_DC(d, **kwargs)
+            
+            return r
+        
         elif type == 'PV':
             self.model = model.BatMod_PV(d, **kwargs)
     
@@ -111,8 +163,8 @@ class Controller(object):
     def _load_pv_input(self, fname, name):
         """Loads PV input data
 
-        :param fmat: Path to file
-        :type fmat: string
+        :param fref: Path to file
+        :type fref: string
         :param name: Name of the input series
         :type name: string
         """

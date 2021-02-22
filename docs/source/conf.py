@@ -12,7 +12,8 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('/Users/kairosken/Documents/openBatLib/code'))
+#sys.path.append('code')
 
 
 # -- Project information -----------------------------------------------------

@@ -16,12 +16,41 @@ from pyModbusTCP import utils
 class BatModDC(object):
     """Performance Simulation Class for DC-coupled PV-Battery systems
 
-    :param object: object
-    :type object: object
+    :param parameter: PV battery system parameters
+    :type parameter: dict
+
+    :param d: array containing parameters
+    :type d: numpy array
+    
+    :param ppv: normalized DC power output of the PV generator
+    :type ppv: numpy array
+
+    :param pl: AC load power
+    :type pl: numpy array
+
+    :param Pr: Residual power for battery charging
+    :type Pr: numpy array
+
+    :param Prpv: AC residual power
+    :type Pr: numpy array
+
+    :param Ppv: DC power output of the PV generator
+    :type Ppv: numpy array
+
+    :param ppv2ac: Normalized AC output power of the PV2AC conversion pathway to cover the AC power demand
+    :type ppv2ac: numpy array
+
+    :param Ppv2ac_out: Target AC output power of the PV2AC conversion pathway
+    :type Ppv2ac_out: numpy array
+
+    :param dt: time step width in seconds
+    :type dt: integer
     """
     _version = 0.1
 
     def __init__(self, parameter, d, ppv, pl, Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out, dt):
+        """Constructor method
+        """
         self.parameter = parameter
         self.d = d
         self.ppv = ppv
@@ -57,6 +86,8 @@ class BatModDC(object):
         self.bat_mod_res()
 
     def simulation(self, pvmod=True):
+        """Manages the Performance Simulation Model for AC-coupled PV-Battery Systems
+        """
 
         self.Ppv2ac_out, self.Ppv2bat_in, self.Ppv2bat_in0, self.Pbat2ac_out, self.Pbat2ac_out0, self.Ppvbs, self.Pbat, self.soc, self.soc0 = BatMod_DC(self.d, self.dt, self.soc0, self.soc, self.Pr, self.Prpv,  self.Ppv, self.Ppv2bat_in0, self.Ppv2bat_in, self.Pbat2ac_out0, self.Pbat2ac_out, self.Ppv2ac_out0, self.Ppv2ac_out, self.Ppvbs, self.Pbat)
         
@@ -65,28 +96,72 @@ class BatModDC(object):
         self.Ppv2bat = self.Ppv2bat_in  # DC input power of the PV2BAT conversion pathway
 
     def bat_mod_res(self):
+        """Function to calculate the power flows and energy sums including curtailment of PV power
+        """
         self.E = bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat,
                                    self.dt, self.Ppv2ac, self.Ppv2bat, self.Ppvbs, self.Pperi)
 
     def get_E(self):
+        """Returns the energy sums of the simulation
+
+        :return: Energy sums of the simulation in MWh
+        :rtype: dict
+        """
         return self.E
 
     def get_soc(self):
+        """Returns the state of charge of the battery
+
+        :return: state of charge of the battery
+        :rtype: numpy array
+        """
         return self.soc
 
     def get_Pbat(self):
+        """Returns the DC power of the battery in W
+        
+        :return: DC power of the battery in W
+        :rtype: numpy array
+        """
         return self.Pbat
 
 
 class BatModAC(object):
     """Performance Simulation Class for AC-coupled PV-Battery systems
 
-    :param object: object
-    :type object: object
+    :param parameter: PV battery system parameters
+    :type parameter: dict
+
+    :param d: array containing parameters
+    :type d: numpy array
+    
+    :param ppv: normalized DC power output of the PV generator
+    :type ppv: numpy array
+
+    :param pl: AC load power
+    :type pl: numpy array
+
+    :param Pr: AC residual power
+    :type Pr: numpy array
+
+    :param Ppv: DC power output of the PV generator
+    :type Ppv: numpy array
+
+    :param Ppvs: AC power output of the PV inverter taking into account the conversion losses and maximum output power of the PV inverter
+    :type Ppvs: numpy array
+
+    :param Pperi: Additional power consumption of other system components (e.g. AC power meter) in W
+    :type Pperi: numpy array
+
+    :param dt: time step width in seconds
+    :type dt: integer
+
     """
     _version = '0.1'
 
     def __init__(self, parameter, d, ppv, pl, Pr, Ppv, Ppvs, Pperi, dt):
+        """Constructor method
+        """
         self.parameter = parameter
         self.d = d
         self.ppv = ppv
@@ -99,62 +174,94 @@ class BatModAC(object):
 
         # Initialization and preallocation
         self.Pbat = np.zeros_like(self.ppv)  # DC power of the battery in W
-        self.Pbs = np.zeros_like(ppv)
+        self.Pbs = np.zeros_like(self.ppv) # AC power of the battery system in W
         self.soc = np.zeros_like(self.ppv)  # State of charge of the battery
         self.th = 0  # Start threshold for the recharging of the battery
         self.soc0 = 0  # State of charge of the battery in the first time step
-        self.Pbs0 = 0
+        self.Pbs0 = 0 # AC power of the battery system of the previous time step in W
 
         self.simulation()
 
         self.bat_mod_res()
 
     def simulation(self, pvmod=True):
-        # PerModAC: Performance Simulation Model for AC-coupled PV-Battery Systems
-        '''
-        TODO: Preallocation verschieben
-              Pr anpassen
-        '''
 
-        # 3.3 Simulation of the battery system   
-        #start = time.process_time()     
+        """Manages the Performance Simulation Model for AC-coupled PV-Battery Systems
+        """
         self.Pbat, self.Pbs, self.soc, self.soc0, self.Pbs0 = BatMod_AC(
             self.d, self.dt, self.soc0, self.soc, self.Pr, self.Pbs0, self.Pbs, self.Pbat)
-        #print(time.process_time()-start)
 
-        
     def bat_mod_res(self):
+        """Function to calculate the power flows and energy sums including curtailment of PV power
+        """
         self.E = bat_res_mod(
             self.parameter, self.pl, self.Ppv, self.Pbat, self.dt, self.Ppvs, self.Pbs, self.Pperi)
 
     def get_E(self):
+        """Returns the energy sums of the simulation
+
+        :return: Energy sums of the simulation in MWh
+        :rtype: dict
+        """
         return self.E
 
     def get_soc(self):
-        '''
-        idx = pd.date_range(start='00:00:00', periods=len(self.soc), freq='S')
-        _soc = pd.Series(self.soc, index=idx)
-        soc_1h = _soc.resample('1h').sum()
-        soc_1h = soc_1h.to_numpy()
-        '''
+        """Returns the state of charge of the battery
+
+        :return: state of charge of the battery
+        :rtype: numpy array
+        """
         return self.soc
 
     def get_Pbat(self):
+        """Returns the DC power of the battery in W
+        
+        :return: DC power of the battery in W
+        :rtype: numpy array
+        """
         return self.Pbat
 
     def get_Pbs(self):
+        """Returns the AC power of the battery system in W
+        
+        :return: AC power of the battery system in W
+        :rtype: numpy array
+        """
         return self.Pbs
 
 
 class BatModPV(object):
     """Performance Simulation Class for PV-coupled PV-Battery systems
 
-    :param object: object
-    :type object: object
+    :param parameter: PV battery system parameters
+    :type parameter: dict
+
+    :param d: array containing parameters
+    :type d: numpy array
+    
+    :param ppv: normalized DC power output of the PV generator
+    :type ppv: numpy array
+
+    :param pl: AC load power
+    :type pl: numpy array
+
+    :param Pac: Power demand on the AC side
+    :type Pac: numpy array
+
+    :param Ppv: DC power output of the PV generator
+    :type Ppv: numpy array
+
+    :param Pperi: Additional power consumption of other system components (e.g. AC power meter) in W
+    :type Pperi: numpy array
+
+    :param dt: time step width in seconds
+    :type dt: integer
     """
     _version = '0.1'
 
     def __init__(self, parameter, d, ppv, pl, Pac, Ppv, Pperi, dt):
+        """Constructor method
+        """
         self.parameter = parameter
         self.d = d
         self.ppv = ppv
@@ -183,7 +290,8 @@ class BatModPV(object):
         self.bat_mod_res()
 
     def simulation(self, pvmod=True):
-
+        """Manages the Performance Simulation Model for AC-coupled PV-Battery Systems
+        """
         self.th = 0  # Start threshold for the recharging of the battery
         self.soc0 = 0  # Initial state of charge of the battery in the first time step
 
@@ -196,32 +304,52 @@ class BatModPV(object):
         self.Ppv2bat = self.Ppv2bat_in  # DC input power of the PV2BAT conversion pathway
 
     def bat_mod_res(self):
+        """Function to calculate the power flows and energy sums including curtailment of PV power
+        """
         self.E = bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat, self.dt, self.Ppv2ac, self.Ppv2bat, self.Ppvbs, self.Pperi)
 
     def get_E(self):
+        """Returns the energy sums of the simulation
+
+        :return: Energy sums of the simulation in MWh
+        :rtype: dict
+        """
         return self.E
 
     def get_soc(self):
-        '''
-        idx = pd.date_range(start='00:00:00', periods=len(self.soc), freq='S')
-        _soc = pd.Series(self.soc, index=idx)
-        soc_1h = _soc.resample('1h').sum()
-        soc_1h = soc_1h.to_numpy()
-        '''
+        """Returns the state of charge of the battery
+
+        :return: state of charge of the battery
+        :rtype: numpy array
+        """
         return self.soc
 
     def get_Pbat(self):
+        """Returns the DC power of the battery in W
+        
+        :return: DC power of the battery in W
+        :rtype: numpy array
+        """
         return self.Pbat
 
 
 class ModBus(object):
     """Establishes connection to a battery system via ModBus protocol
 
-    :param object: object
-    :type object: object
+    :param host: IP address of the host
+    :type host: string
+
+    :param port: Server port of the host
+    :type port: integer
+
+    :param unit_id: Unit-ID of the host
+    :type unit_id: integer
+
     """
 
     def __init__(self, host, port, unit_id, input_vals, dt, fname):
+        """Constructor method
+        """
         self.host = host
         self.port = port
         self.unit_id = unit_id
@@ -234,7 +362,8 @@ class ModBus(object):
         self.start_loop()
 
     def open_connection(self):
-
+        """Opens the connection to the host
+        """
         # Open ModBus connection
         try:
             self.c = ModbusClient(host=self.host, port=self.port,
@@ -242,9 +371,10 @@ class ModBus(object):
         except ValueError:
             print("Error with host: {}, port: {} or unit-ID: {} params".format(
                 self.host, self.port, self.unit_id))
-        # Arrray for the setting values
 
     def start_loop(self):
+        """Starts the writing and reading process
+        """
         # Transform the array to fit the 1 minute time duration
         #self.set_vals = np.repeat(self.input_vals, self.dt * 60)
 
@@ -298,6 +428,8 @@ class ModBus(object):
                 i += 1
 
     def read_soc(self, reg):
+        """Reads the state of charge of the battery
+        """
         # Load the actual state fo charge of the battery
         regs = self.c.read_holding_registers(reg, 2)
         # Load content of two registers into a single float value
@@ -306,6 +438,8 @@ class ModBus(object):
         return utils.decode_ieee(*zregs)
 
     def create_csv_file(self):
+        """Creates a csv file from set and read values
+        """
         # Create a new csv-file
         with open(self.fname, 'w') as f:
             writer = csv.writer(f, dialect='excel')
@@ -318,6 +452,8 @@ class ModBus(object):
                              'P_bat'])
 
     def save_to_csv(self):
+        """Saves the set and read values to s csv file
+        """
         # Save the read values to a csv file
         with open(self.fname, "a") as f:
             wr = csv.writer(f, dialect='excel')
@@ -328,9 +464,15 @@ class ModBus(object):
 def max_self_consumption(parameter, ppv, pl, pvmod=True):
     """Function for maximizing self consumption
 
-    :param object: object
-    :ppv object: object
-    :pl object: object
+    :param parameter: PV battery system parameters
+    :type parameter: dict
+
+    :param ppv: normalized DC power output of the PV generator
+    :type ppv: numpy array
+    
+    :param pl: AC load power
+    :type pl: numpy array
+
     """
     # Maximize self consumption for AC-coupled systems
     if parameter['Top'] == 'AC':
@@ -1683,7 +1825,17 @@ def load_mat(fname, name):
     return data 
 
 def load_ref_case(fname, name):
+    """Loads PV power or Load from the reference cases
 
+    :param fname: Path to mat file 
+    :type fname: string
+
+    :param name: Identifier for PV Power or Load
+    :type name: string
+
+    :return: Returns PV power or load from the reference case
+    :rtype: numpy array
+    """
     with open(fname, 'rb') as f:
 
         a = np.load(f)
