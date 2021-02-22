@@ -20,7 +20,7 @@ parameter = r'/Users/kairosken/Documents/Bachelorarbeit/PerMod 2.1/PerModPAR.xls
 #fname_test = r'/Users/kairosken/Documents/Bachelorarbeit/Zeitreihe_Testlauf.csv'
 #File path for Linux
 #fname_test = r'/home/kai/Dokumente/openBatLib/Data/Zeitreihe_Testlauf.csv'
-system = 'H'
+system = 'I'
 ref_case = '1'
 
 cwd = os.getcwd()
@@ -54,7 +54,7 @@ c = controller.Controller()
 
 #Pbat, Pbs, soc, soc0 = c.real_time(params, _dt=dt, _soc0=soc0, _soc=soc, _Pr=Pr, _Pbs0=Pbs0, _Pbs=Pbs, _Pbat=Pbat)
 
-c.sim(fmat=mat, fparameter=parameter, system=system, ref_case=ref_case, dt=dt)
+c.sim(fref=mat, fparameter=parameter, system=system, ref_case=ref_case, dt=dt)
 
 c.print_E()
 
