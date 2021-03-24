@@ -19,10 +19,9 @@ class Controller(object):
 
         self.view = view.View()
 
-    def sim(self, fref, fparameter, system, ref_case, dt=1):
+    def sim(self, fparameter, system, ref_case, dt=1):
         """Method for managing the simulation
-        :param fref: File path to the refernce case
-        :type fref: string
+
 
         :param fparameter: File path to the system parameters
         :type fparameter: string

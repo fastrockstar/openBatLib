@@ -3,11 +3,6 @@ import controller
 import numpy as np
 import pandas as pd
 
-
-#mat = r"C:\Users\kroes\Nextcloud\Shares\09_Studierende\Persönliche Ordner\Kai\Bachelorarbeit\PerMod 2.1\PerModInput.mat"
-#mat = r'/home/kai/Dokumente/Bachelorarbeit/PerMod 2.1/PerModInput.mat'
-# File path for macOS
-mat = r'/Users/kairosken/Documents/Bachelorarbeit/PerMod 2.1/PerModInput.mat'
 # File path for Linux
 #mat = r'/home/kai/Dokumente/openBatLib/Data/PerModInput.mat'
 #parameter = r"C:\Users\kroes\Nextcloud\Shares\09_Studierende\Persönliche Ordner\Kai\Bachelorarbeit\PerMod 2.1\PerModPAR.xlsx"
@@ -23,13 +18,6 @@ parameter = r'/Users/kairosken/Documents/Bachelorarbeit/PerMod 2.1/PerModPAR.xls
 system = 'I'
 ref_case = '1'
 
-cwd = os.getcwd()
-
-mat = os.path.join(cwd, 'reference_case/PerModInput.mat')
-
-print(mat)
-
-#df_test_run = pd.read_csv(fname_test, index_col=0, parse_dates=True)
 
 dt = 1
 soc0 = 0.8 
@@ -54,7 +42,7 @@ c = controller.Controller()
 
 #Pbat, Pbs, soc, soc0 = c.real_time(params, _dt=dt, _soc0=soc0, _soc=soc, _Pr=Pr, _Pbs0=Pbs0, _Pbs=Pbs, _Pbat=Pbat)
 
-c.sim(fref=mat, fparameter=parameter, system=system, ref_case=ref_case, dt=dt)
+c.sim(fparameter=parameter, system=system, ref_case=ref_case, dt=dt)
 
 c.print_E()
 
