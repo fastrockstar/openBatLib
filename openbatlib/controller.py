@@ -5,8 +5,8 @@ from numba import types
 from numba.typed import Dict
 from numba import njit
 
-import openbatlib.model
-import openbatlib.view
+from openbatlib import model
+from openbatlib import view
 
 class Controller(object):
     """Class to manage the models and view components
@@ -17,7 +17,7 @@ class Controller(object):
         """Constructor method
         """
 
-        self.view = openbatlib.view.View()
+        self.view = view.View()
 
     def sim(self, fparameter, system, ref_case, dt=1):
         """Method for managing the simulation
@@ -59,9 +59,9 @@ class Controller(object):
         
         # Call model for DC coupled systems
         elif parameter['Top'] == 'DC':
-            Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out = openbatlib.model.max_self_consumption(parameter, ppv, pl, pvmod=True)
-            d = openbatlib.model.transform_dict_to_array(parameter)
-            self.model = openbatlib.model.BatModDC(parameter, d, ppv, pl, Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out, dt)
+            Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
+            d = model.transform_dict_to_array(parameter)
+            self.model = model.BatModDC(parameter, d, ppv, pl, Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out, dt)
         
         # Call model for PV-coupled systems
         elif parameter['Top'] == 'PV':
@@ -70,7 +70,7 @@ class Controller(object):
             self.model = model.BatModPV(parameter, d, ppv, pl, Pac, Ppv, Pperi, dt)
 
         # Load the view class
-        self.view = openbatlib.view.View()
+        self.view = view.View()
     
     def modbus(self, host, port, unit_id, data_frame, ref_case, dt, fname, fparameter, fref, system):
         """Function to establish a connection to a battery system via ModBus protocol
@@ -143,8 +143,8 @@ class Controller(object):
         :param system: Indicator for the system
         :type system: string
         """
-        parameter = openbatlib.model.load_parameter(fparameter, system)
-        parameter = openbatlib.model.eta2abc(parameter)
+        parameter = model.load_parameter(fparameter, system)
+        parameter = model.eta2abc(parameter)
 
         return parameter
 
@@ -167,7 +167,7 @@ class Controller(object):
         :param name: Name of the input series
         :type name: string
         """
-        ppv = openbatlib.model.load_ref_case(fname, name)
+        ppv = model.load_ref_case(fname, name)
 
         return ppv
 
@@ -181,7 +181,7 @@ class Controller(object):
             if parameter['Top'] == 'AC' or parameter['Top'] == 'PV':
                 inverter_parameter = model.load_parameter(fparameter, 'L')            
             parameter['P_PV'] = 5.0
-            pl = openbatlib.model.load_ref_case(fname, 'pl1')
+            pl = model.load_ref_case(fname, 'pl1')
                                         
         elif ref_case == '2':
             # Load paramertes of second inverter
