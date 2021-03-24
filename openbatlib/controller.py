@@ -19,7 +19,11 @@ class Controller(object):
 
         self.view = view.View()
 
-    def sim(self, fparameter, system, ref_case, dt=1):
+        # get path to working directory
+        self.cwd = os.getcwd()
+
+
+    def sim(self, fparameter=None, freference=None, system=None, ref_case=None, dt=1):
         """Method for managing the simulation
 
 
@@ -35,21 +39,23 @@ class Controller(object):
         :param dt: time step width in seconds
         :type dt: integer
         """
-        
+
+        if fparameter is None:
+            # set path to the refence case file
+            fparameter = os.path.join(self.cwd, 'parameter/PerModPAR.xlsx')
+
+        if freference is None:   
+            # set path to the refence case file
+            freference = os.path.join(self.cwd, 'reference_case/ref_case_data.npz')
+
         # Load system parameters
         parameter = self._load_parameter(fparameter, system)
         
-        # get path to working directory
-        cwd = os.getcwd()
-
-        # set path to the refence case file
-        fname = os.path.join(cwd, 'reference_case/ref_case_data.npz')
-        
         # Load PV generator input
-        ppv = self._load_pv_input(fname, 'ppv')
+        ppv = self._load_pv_input(freference, 'ppv')
         
         # Load data from reference cases (load and inverter parameters)
-        parameter, pl = self._load_ref_case(parameter, fname, fparameter, ref_case)
+        parameter, pl = self._load_ref_case(parameter, freference, fparameter, ref_case)
 
         # Call model for AC coupled systems
         if parameter['Top'] == 'AC':

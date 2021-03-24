@@ -1550,7 +1550,6 @@ def load_parameter(fname, col_name):
     :return: Dictionary holding parameters from the Excel sheet
     :rtype: dict
     """
-    _version = '0.1'
     
     wb = load_workbook(fname, data_only=True)
     ws = wb['Data'] # Load Data sheet of excel file
