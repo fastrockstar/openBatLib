@@ -1,7 +1,6 @@
-import os
 from openbatlib import controller
+
 import numpy as np
-import pandas as pd
 
 # File path for Linux
 #mat = r'/home/kai/Dokumente/openBatLib/Data/PerModInput.mat'
