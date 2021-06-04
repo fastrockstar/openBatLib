@@ -1,5 +1,4 @@
 import numpy as np
-#import scipy.io as sio
 import numba as nb
 from numba import types
 from numba.typed import Dict
@@ -88,8 +87,8 @@ class BatModDC(object):
     def simulation(self, pvmod=True):
         """Manages the Performance Simulation Model for AC-coupled PV-Battery Systems
         """
-
-        self.Ppv2ac_out, self.Ppv2bat_in, self.Ppv2bat_in0, self.Pbat2ac_out, self.Pbat2ac_out0, self.Ppvbs, self.Pbat, self.soc, self.soc0 = BatMod_DC(self.d, self.dt, self.soc0, self.soc, self.Pr, self.Prpv,  self.Ppv, self.Ppv2bat_in0, self.Ppv2bat_in, self.Pbat2ac_out0, self.Pbat2ac_out, self.Ppv2ac_out0, self.Ppv2ac_out, self.Ppvbs, self.Pbat)
+                                                                                                                                                                            
+        self.Ppv2ac_out, self.Ppv2bat_in, self.Ppv2bat_in0, self.Pbat2ac_out, self.Pbat2ac_out0, self.Ppvbs, self.Pbat, self.soc, self.soc0 = BatMod_DC(self.d, self.dt, self.soc0, self.soc, self.Pr, self.Prpv,  self.Ppv, self.Ppv2bat_in0, self.Ppv2bat_in, self.Pbat2ac_out0, self.Pbat2ac_out, self.Ppv2ac_out, self.Ppvbs, self.Pbat)
         
         # Define missing parameters
         self.Ppv2ac = self.Ppv2ac_out  # AC output power of the PV2AC conversion pathway
@@ -748,8 +747,8 @@ def BatMod_AC(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
 
         # Transfer the realized AC power of the battery system and
         # the DC power of the battery
-        _Pbs[t] = P_bs
         _Pbs0 = P_bs
+        _Pbs[t] = P_bs
         _Pbat[t] = P_bat
 
         # Change the energy content of the battery from Ws to Wh conversion
@@ -777,7 +776,7 @@ def BatMod_AC(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
     return _Pbat, _Pbs, _soc, _soc0, _Pbs0
 
 @nb.jit(nopython=True)
-def BatMod_DC(d, _dt, _soc0, _soc, _Pr, _Prpv,  _Ppv, _Ppv2bat_in0, _Ppv2bat_in, _Pbat2ac_out0, _Pbat2ac_out, _Ppv2ac_out0, _Ppv2ac_out, _Ppvbs, _Pbat):
+def BatMod_DC(d, _dt, _soc0, _soc, _Pr, _Prpv,  _Ppv, _Ppv2bat_in0, _Ppv2bat_in, _Pbat2ac_out0, _Pbat2ac_out, _Ppv2ac_out, _Ppvbs, _Pbat):
     """Performance simulation function for DC-coupled battery systems
 
     :param d: array containing parameters
@@ -1236,6 +1235,7 @@ def BatMod_PV(d, _dt, _soc0, _soc, _Ppv, _Pac, _Ppv2bat_in0, _Ppv2bat_in, _Ppv2a
 
             # Transfer the final values
             _Ppv2ac_out[t] = P_pv2ac_out
+            _Ppv2bat_in0 = P_pv2bat_in
             _Ppv2bat_in[t] = P_pv2bat_in
 
         elif P_rpv < -_P_BAT2PV_min and _soc0 > 0:
@@ -1280,6 +1280,7 @@ def BatMod_PV(d, _dt, _soc0, _soc, _Ppv, _Pac, _Ppv2bat_in0, _Ppv2bat_in, _Ppv2a
 
             # Transfer the final values
             _Ppv2ac_out[t] = P_pv2ac_out
+            _Pbat2pv_out0 = P_bat2pv_out
             _Pbat2pv_out[t] = P_bat2pv_out
 
         else:  # Neither charging nor discharging of the battery

@@ -127,20 +127,24 @@ class Controller(object):
         r = dict() # Dictionary storing the results
         if parameter['Top'] == 'AC':
             d = self._dict_to_array(parameter)
-            r['Pbat'], r['Pbs'], r['soc'], r['soc0'] = model.BatMod_AC(d, **kwargs)
+            r['Pbat'], r['Pbs'], r['soc'], r['soc0'], r['Pbs0'] = model.BatMod_AC(d, **kwargs)
              
             return r
         
         elif type == 'DC':
             d = self._dict_to_array(parameter)
-            r['Ppv2ac_out'], r['Ppv2bat_in'], r['Ppv2bat_in0'], r['Pbat2ac_out'], r['Pbat2ac_out0'], r['Ppvbs'],
-            r['Pbat'], r['soc'], r['soc0'] = model.BatMod_DC(d, **kwargs)
+            r['Ppv2ac_out'], r['Ppv2bat_in'], r['Ppv2bat_in0'], r['Pbat2ac_out'], r['Pbat2ac_out0'],
+            r['Ppvbs'], r['Pbat'], r['soc'], r['soc0'] = model.BatMod_DC(d, **kwargs)
             
             return r
         
         elif type == 'PV':
-            self.model = model.BatMod_PV(d, **kwargs)
-    
+            d = self._dict_to_array(parameter)
+            r['_soc'], r['_soc0'], r['_Ppv'], r['_Ppvbs'], r['_Pbat'], r['_Ppv2ac_out'], r['_Pbat2pv_out'],
+            r['_Ppv2bat_in'] = model.BatMod_PV(d, **kwargs)
+
+            return r
+
     def _load_parameter(self, fparameter, system):
         """Loads system parameter
 
