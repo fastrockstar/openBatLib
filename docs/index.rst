@@ -1,5 +1,5 @@
 .. openBatLib documentation master file, created by
-   sphinx-quickstart on Wed Feb 10 14:40:01 2021.
+   sphinx-quickstart on Fri Jun  4 17:13:53 2021.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
@@ -10,7 +10,7 @@ Welcome to openBatLib's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   modules
+
 
 Indices and tables
 ==================
