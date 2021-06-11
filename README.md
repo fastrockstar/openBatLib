@@ -3,11 +3,8 @@
 <tr>
   <td>Build Status</td>
   <td>
-    <a href="http://pvlib-python.readthedocs.org/en/stable/">
-    <img src="https://readthedocs.org/projects/pvlib-python/badge/?version=stable" alt="documentation build status" />
-    </a>
-    <a href="https://dev.azure.com/solararbiter/pvlib%20python/_build/latest?definitionId=4&branchName=master">
-      <img src="https://dev.azure.com/solararbiter/pvlib%20python/_apis/build/status/pvlib.pvlib-python?branchName=master" alt="Azure Pipelines build status" />
+    <a href='https://openbatlib.readthedocs.io/en/latest/?badge=latest'>
+    <img src='https://readthedocs.org/projects/openbatlib/badge/?version=latest' alt='Documentation Status' />
     </a>
   </td>
 </tr>
