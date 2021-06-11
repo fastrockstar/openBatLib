@@ -8,6 +8,14 @@
     </a>
   </td>
 </tr>
+<tr>
+  <td>License</td>
+  <td>
+    <a href="https://github.com/fastrockstar/openBatLib/blob/master/LICENSE">
+    <img src="https://img.shields.io/github/license/fastrockstar/openBatLib" alt="license" />
+    </a>
+</td>
+</tr>
 </table>
 
 openBatLib is a tool that provides a set of 
