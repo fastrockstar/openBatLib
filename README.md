@@ -1,13 +1,6 @@
 <table>
 
 <tr>
-  <td>Build Status</td>
-  <td>
-    <a href='https://openbatlib.readthedocs.io/en/latest/?badge=latest'>
-    <img src='https://readthedocs.org/projects/openbatlib/badge/?version=latest' alt='Documentation Status' />
-    </a>
-  </td>
-</tr>
 <tr>
   <td>License</td>
   <td>
@@ -15,6 +8,13 @@
     <img src="https://img.shields.io/github/license/fastrockstar/openBatLib" alt="license" />
     </a>
 </td>
+</tr>
+  <td>Build Status</td>
+  <td>
+    <a href='https://openbatlib.readthedocs.io/en/latest/?badge=latest'>
+    <img src='https://readthedocs.org/projects/openbatlib/badge/?version=latest' alt='Documentation Status' />
+    </a>
+  </td>
 </tr>
 </table>
 
