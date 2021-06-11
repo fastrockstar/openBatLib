@@ -9,7 +9,7 @@ PerMod can be found at https://pvspeicher.htw-berlin.de/permod/.
 Documentation
 =============
 
-A full documentation is still under development. 
+A full documentation can be found at [readthedocs](https://openbatlib.readthedocs.io/). 
 
 
 Contributing
