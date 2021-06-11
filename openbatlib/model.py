@@ -1807,23 +1807,7 @@ def eta2abc(parameter):
     parameter['p_ac2g_max'] = 0.7
 
     return parameter
-"""
-def load_mat(fname, name):
-    Loads mat files
 
-    :param fname: Path to mat file 
-    :type fname: string
-    :return: Data from the mat file
-    :rtype: numpy array
-    
-    _version = '0.1'
-    # Loads content of the mat-file
-    mat_contents = sio.loadmat(fname, squeeze_me=True)
-    # extracts specific data
-    data = np.array(mat_contents[name], dtype='float64')
-    
-    return data 
-"""
 def load_ref_case(fname, name):
     """Loads PV power or Load from the reference cases
 
