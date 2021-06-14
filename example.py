@@ -7,7 +7,7 @@ c = controller.Controller()
 rt = controller.Controller()
 
 # Use this method to start the simulation
-c.sim(system="I", ref_case="1", dt=1)
+c.sim(system="H", ref_case="1", dt=1)
 """
 #system = "H"
 
