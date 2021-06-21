@@ -33,7 +33,7 @@ The first step is to create an instance of the `Controller` class.
 c = controller.Controller()
 ```
 This class allows simulations in different ways. For this short tutotiral we use the `sim()` method. Using this method, the first step is to select the model to be simulated. An Excel file for this is available under `parameter`, in which all currently supported systems are listed. Other parameters required for the simulation are PV generator and load values. openBatLib offers two different reference cases containing those values to choose from.
-For this example we use the __system__ `H`(an AC-coupled battery system) and the __reference case__ ` 1`. System `H` represents . This reference case represents a household with annual needs of  $$\text{5010 kWh}$$ and a nominal PV power of $$\text{5 kWp}$$.
+For this example we use the __system__ `H`(an AC-coupled battery system) and the __reference case__ ` 1`. System `H` represents . This reference case represents a household with annual needs of 5010 kWh and a nominal PV power of 5 kWp.
 ```python
 c.sim(system="I", ref_case="1")
 ```
