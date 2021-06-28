@@ -59,9 +59,9 @@ class Controller(object):
 
         # Call model for AC coupled systems
         if parameter['Top'] == 'AC':
-            Pr, Ppv, Ppvs, Pperi = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
+            
             d = model.transform_dict_to_array(parameter)
-            self.model = model.BatModAC(parameter, d, ppv, pl, Pr, Ppv, Ppvs, Pperi, dt)
+            self.model = model.BatModAC(parameter, d, ppv, pl, dt)
         
         # Call model for DC coupled systems
         elif parameter['Top'] == 'DC':
@@ -224,6 +224,11 @@ class Controller(object):
     def print_E(self):
         E = self.model.get_E()
         self.view.print_E(E)
+
+    def print_SPI(self):
+        spi = self.model.get_SPI()
+        self.view.print_SPI(spi)
+
 
     def E_to_csv(self, name):
         E = self.model.get_E()

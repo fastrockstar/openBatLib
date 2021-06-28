@@ -47,3 +47,7 @@ class View(object):
     def store_to_pickle(fname, data):
         with open(fname, 'wb') as f:
             np.save(f, data)
+    
+    @staticmethod
+    def print_SPI(spi):
+        print("System Performance Index SPI (5 kWp): " + str(round(spi*100, 2)) + ' %')

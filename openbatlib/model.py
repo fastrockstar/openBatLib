@@ -159,17 +159,13 @@ class BatModAC(object):
     """
     _version = '0.1'
 
-    def __init__(self, parameter, d, ppv, pl, Pr, Ppv, Ppvs, Pperi, dt):
+    def __init__(self, parameter, d, ppv, pl, dt):
         """Constructor method
         """
         self.parameter = parameter
         self.d = d
         self.ppv = ppv
         self.pl = pl
-        self.Pr = Pr
-        self.Ppv = Ppv
-        self.Ppvs = Ppvs
-        self.Pperi = Pperi
         self.dt = dt
 
         # Initialization and preallocation
@@ -182,37 +178,63 @@ class BatModAC(object):
 
         @dataclass
         class BatModAC_real:
-            Pbat : np.array
-            Pbs  : np.array
-            soc  : np.array
-            soc0 : np.array
-            Pbs0 : np.array
-            E    : dict
+            Pr    : np.array
+            Ppv   : np.array
+            Ppvs  : np.array
+            Pperi : np.array
+            Pbat  : np.array
+            Pbs   : np.array
+            soc   : np.array
+            soc0  : np.array
+            Pbs0  : np.array
+            E     : dict
+
+        @dataclass
+        class BatModAC_ideal:
+            Pr    : np.array
+            Ppv   : np.array
+            Ppvs  : np.array
+            Pperi : np.array
+            Pbat  : np.array
+            Pbs   : np.array
+            soc   : np.array
+            soc0  : np.array
+            Pbs0  : np.array
+            E     : dict
 
         self.real = BatModAC_real
+        self.real.Pr, self.real.Ppv, self.real.Ppvs, self.real.Pperi = max_self_consumption(parameter, ppv, pl, pvmod=True)
 
+        self.ideal = BatModAC_ideal
+        self.ideal.Pr, self.ideal.Ppv, self.ideal.Ppvs, self.ideal.Pperi = max_self_consumption(parameter, ppv, pl, pvmod=True, ideal=True)
+        self.ideal.Ppvs = self.ideal.Ppv # AC power output of the PV system
+        
         self.simulation()
     
         self.bat_mod_res()
 
-    def simulation(self, spi=False):
+        self.spi = calculate_spi(self.real.E, self.ideal.E)
+
+    def simulation(self, spi=True):
 
         """Manages the Performance Simulation Model for AC-coupled PV-Battery Systems
         """
         
         self.real.Pbat, self.real.Pbs, self.real.soc, self.real.soc0, self.real.Pbs0 = BatMod_AC(
-            self.d, self.dt, self.soc0, self.soc, self.Pr, self.Pbs0, self.Pbs, self.Pbat)
+            self.d, self.dt, self.soc0, self.soc, self.real.Pr, self.Pbs0, self.Pbs, self.Pbat)
         
         if (spi):
-            pass
-
-
+            self.ideal.Pbs, self.ideal.Pbat, self.ideal.Pperi, self.ideal.soc0, self.ideal.soc = BatMod_AC_ideal(
+                self.d, self.dt, self.soc0, self.soc, self.ideal.Pr, self.Pbat)
 
     def bat_mod_res(self):
         """Function to calculate the power flows and energy sums including curtailment of PV power
         """
         self.real.E = bat_res_mod(
-            self.parameter, self.pl, self.Ppv, self.real.Pbat, self.dt, self.Ppvs, self.real.Pbs, self.Pperi)
+            self.parameter, self.pl, self.real.Ppv, self.real.Pbat, self.dt, self.real.Ppvs, self.real.Pbs, self.real.Pperi)
+
+        self.ideal.E = bat_res_mod(
+            self.parameter, self.pl, self.ideal.Ppv, self.ideal.Pbat, self.dt, self.ideal.Ppvs, self.ideal.Pbs, self.ideal.Pperi)
 
     def get_E(self):
         """Returns the energy sums of the simulation
@@ -220,7 +242,7 @@ class BatModAC(object):
         :return: Energy sums of the simulation in MWh
         :rtype: dict
         """
-        return self.real.E
+        return self.ideal.E
 
     def get_soc(self):
         """Returns the state of charge of the battery
@@ -246,7 +268,9 @@ class BatModAC(object):
         """
         return self.Pbs
 
-
+    def get_SPI(self):
+        return self.spi
+        
 class BatModPV(object):
     """Performance Simulation Class for PV-coupled PV-Battery systems
 
@@ -478,7 +502,7 @@ class ModBus(object):
                          self.soc0, self.set_val, self.P_ac, self.P_bat])
 
 
-def max_self_consumption(parameter, ppv, pl, pvmod=True):
+def max_self_consumption(parameter, ppv, pl, pvmod=True, ideal=False):
     """Function for maximizing self consumption
 
     :param parameter: PV battery system parameters
@@ -495,11 +519,18 @@ def max_self_consumption(parameter, ppv, pl, pvmod=True):
     if parameter['Top'] == 'AC':
 
         # DC power output of the PV generator
-        if pvmod:  # ppv: Normalized DC power output of the PV generator in kW/kWp
-            Ppv = np.minimum(
-                ppv * parameter['P_PV'], parameter['P_PV2AC_in']) * 1000
+        if pvmod:  # ppv: Normalized DC power output of the PV generator in kW/kWp 
+            if ideal:
+                Ppv = np.maximum(0, ppv ) * parameter['P_PV'] * 1000
+            else:
+                Ppv = np.minimum(ppv * parameter['P_PV'], parameter['P_PV2AC_in']) * 1000
         else:  # ppv: DC power output of the PV generator in W
-            Ppv = np.minimum(ppv, parameter['P_PV2AC_in'] * 1000)
+            
+            if ideal:
+                Ppv = np.maximum(0, ppv)
+            else:
+                Ppv = np.minimum(ppv, parameter['P_PV2AC_in'] * 1000)
+
 
         # Normalized input power of the PV inverter
         ppvinvin = Ppv / parameter['P_PV2AC_in'] / 1000
@@ -518,7 +549,10 @@ def max_self_consumption(parameter, ppv, pl, pvmod=True):
         Pperi[Ppvs == 0] += parameter['P_PVINV_AC']
 
         # Residual power
-        Pr = Ppvs - pl - Pperi
+        if ideal:
+            Pr = Ppv - pl
+        else:
+            Pr = Ppvs - pl - Pperi
 
         return Pr, Ppv, Ppvs, Pperi
 
@@ -791,6 +825,52 @@ def BatMod_AC(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
             _th = False
 
     return _Pbat, _Pbs, _soc, _soc0, _Pbs0
+
+@nb.jit(nopython=True)
+def BatMod_AC_ideal(d, _dt, _soc0, _soc, _Pr, _Pbat):
+
+    _E_BAT = d[0]
+
+    for t in range(_Pr.size):
+       
+        # Energy content of the battery in the previous time step
+        E_b0 = _soc0 * _E_BAT * 1000
+    
+        # Calculate the DC power of the battery from the residual power
+        P_bat = _Pr[t];
+      
+        # Decision if the battery should be charged or discharged
+        if P_bat > 0 and _soc0 < 1: # Battery charging
+            E_b = E_b0 + P_bat * _dt / 3600 # Change the energy content of the battery
+            
+                
+        elif P_bat < 0 and _soc0 > 0: # Battery discharging
+            
+            # Change the energy content of the battery
+            E_b = E_b0 + P_bat * _dt / 3600 
+        
+        else: # Neither charging nor discharging of the battery
+            
+            # Set the DC power of the battery to zero
+            P_bat = 0
+            
+            # No change in the energy content of the battery
+            E_b = E_b0
+        
+        # Transfer the realized DC power of the battery
+        _Pbat[t] = P_bat
+        
+        # Calculate the state of charge of the battery
+        _soc0 = E_b / (_E_BAT * 1000)
+        _soc[t] = _soc0
+    
+
+    # Define missing parameters
+    
+    _Pbs = _Pbat # Realized AC power of the battery system
+    _Pperi = np.zeros_like(_Pr) # Additional power consumption of the peripheral system components
+
+    return _Pbs, _Pbat, _Pperi, _soc0, _soc
 
 @nb.jit(nopython=True)
 def BatMod_DC(d, _dt, _soc0, _soc, _Pr, _Prpv,  _Ppv, _Ppv2bat_in0, _Ppv2bat_in, _Pbat2ac_out0, _Pbat2ac_out, _Ppv2ac_out, _Ppvbs, _Pbat):
@@ -1940,5 +2020,22 @@ def transform_dict_to_array(parameter):
 
     return d
 
-def calculate_spi():
-    pass
+def calculate_spi(_E_real, _E_ideal):
+    # SPI calculation for the reference case:
+    # Grid electricity price in Euro/kWh
+    pg2ac = 0.30
+    # Grid feed-in tariff in Euro/kWh
+    pac2g = 0.12
+    # Grid electricity costs without a PV-battery system in Euro/a
+    Cref = _E_ideal['El'] * pg2ac * 1000
+    # Net grid electricity costs with the lossless PV-battery system in Euro/a
+    Cideal = _E_ideal['Eg2ac'] * pg2ac * 1000 - _E_ideal['Eac2g'] * pac2g *1000
+    # Net grid electricity costs with the real PV-battery system in Euro/a
+    Creal = _E_real['Eg2ac'] * pg2ac * 1000 - _E_real['Eac2g'] * pac2g * 1000
+    # Reduction of the net grid electricity costs by the lossless PV-battery system in Euro/a
+    dCideal = Cref - Cideal
+    # Reduction of the net grid electricity costs by the real PV-battery system in Euro/a
+    dCreal = Cref - Creal
+    # System Performance Index (SPI)
+    spi = dCreal / dCideal;
+    return spi
