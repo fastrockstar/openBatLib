@@ -270,7 +270,7 @@ class BatModAC(object):
 
     def get_SPI(self):
         return self.spi
-        
+
 class BatModPV(object):
     """Performance Simulation Class for PV-coupled PV-Battery systems
 
@@ -2029,7 +2029,7 @@ def calculate_spi(_E_real, _E_ideal):
     # Grid electricity costs without a PV-battery system in Euro/a
     Cref = _E_ideal['El'] * pg2ac * 1000
     # Net grid electricity costs with the lossless PV-battery system in Euro/a
-    Cideal = _E_ideal['Eg2ac'] * pg2ac * 1000 - _E_ideal['Eac2g'] * pac2g *1000
+    Cideal = _E_ideal['Eg2ac'] * pg2ac * 1000 - _E_ideal['Eac2g'] * pac2g * 1000
     # Net grid electricity costs with the real PV-battery system in Euro/a
     Creal = _E_real['Eg2ac'] * pg2ac * 1000 - _E_real['Eac2g'] * pac2g * 1000
     # Reduction of the net grid electricity costs by the lossless PV-battery system in Euro/a
@@ -2039,3 +2039,6 @@ def calculate_spi(_E_real, _E_ideal):
     # System Performance Index (SPI)
     spi = dCreal / dCideal;
     return spi
+
+
+
