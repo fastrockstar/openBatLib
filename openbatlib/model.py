@@ -1,5 +1,6 @@
 import numpy as np
 import numba as nb
+from dataclasses import dataclass
 from numba import types
 from numba.typed import Dict
 from numba import njit
@@ -179,22 +180,39 @@ class BatModAC(object):
         self.soc0 = 0  # State of charge of the battery in the first time step
         self.Pbs0 = 0 # AC power of the battery system of the previous time step in W
 
-        self.simulation()
+        @dataclass
+        class BatModAC_real:
+            Pbat : np.array
+            Pbs  : np.array
+            soc  : np.array
+            soc0 : np.array
+            Pbs0 : np.array
+            E    : dict
 
+        self.real = BatModAC_real
+
+        self.simulation()
+    
         self.bat_mod_res()
 
-    def simulation(self, pvmod=True):
+    def simulation(self, spi=False):
 
         """Manages the Performance Simulation Model for AC-coupled PV-Battery Systems
         """
-        self.Pbat, self.Pbs, self.soc, self.soc0, self.Pbs0 = BatMod_AC(
+        
+        self.real.Pbat, self.real.Pbs, self.real.soc, self.real.soc0, self.real.Pbs0 = BatMod_AC(
             self.d, self.dt, self.soc0, self.soc, self.Pr, self.Pbs0, self.Pbs, self.Pbat)
+        
+        if (spi):
+            pass
+
+
 
     def bat_mod_res(self):
         """Function to calculate the power flows and energy sums including curtailment of PV power
         """
-        self.E = bat_res_mod(
-            self.parameter, self.pl, self.Ppv, self.Pbat, self.dt, self.Ppvs, self.Pbs, self.Pperi)
+        self.real.E = bat_res_mod(
+            self.parameter, self.pl, self.Ppv, self.real.Pbat, self.dt, self.Ppvs, self.real.Pbs, self.Pperi)
 
     def get_E(self):
         """Returns the energy sums of the simulation
@@ -202,7 +220,7 @@ class BatModAC(object):
         :return: Energy sums of the simulation in MWh
         :rtype: dict
         """
-        return self.E
+        return self.real.E
 
     def get_soc(self):
         """Returns the state of charge of the battery
@@ -575,7 +593,6 @@ def max_self_consumption(parameter, ppv, pl, pvmod=True):
         Pac = pl + Pperi
 
         return Pac, Ppv, Pperi
-
 
 @nb.jit(nopython=True)
 def BatMod_AC(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
@@ -1922,3 +1939,6 @@ def transform_dict_to_array(parameter):
         d = np.append(d, parameter['t_CONSTANT'])
 
     return d
+
+def calculate_spi():
+    pass

@@ -23,7 +23,7 @@ class Controller(object):
         self.cwd = os.getcwd()
 
 
-    def sim(self, fparameter=None, freference=None, system=None, ref_case=None, dt=1):
+    def sim(self, fparameter=None, freference=None, system=None, ref_case=None, dt=1, spi=False):
         """Method for managing the simulation
 
 

@@ -38,8 +38,5 @@ Pbs0 = 0 # AC power of the battery system of the previous time step in W
 
 results = rt.real_time(parameter, _dt=dt, _soc0=soc0, _soc=soc, _Pr=Pr, _Pbs0=Pbs0, _Pbs=Pbs, _Pbat=Pbat)
 """
-a = c.model.E
-
-b = c.model.Ppv.max()
 
 c.print_E()
