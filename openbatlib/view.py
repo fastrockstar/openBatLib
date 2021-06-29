@@ -50,4 +50,4 @@ class View(object):
     
     @staticmethod
     def print_SPI(spi):
-        print("System Performance Index SPI (5 kWp): " + str(round(spi*100, 2)) + ' %')
+        print("System Performance Index SPI (5 kWp): " + str(round(spi*100, 1)) + ' %')

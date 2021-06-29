@@ -226,7 +226,7 @@ class Controller(object):
         E_real_df = pd.DataFrame.from_dict(E_real, orient='index', columns=['real / MWh'])
         E_ideal_df = pd.DataFrame.from_dict(E_ideal, orient='index', columns=['ideal / MWh'])
         E_df = pd.concat([E_ideal_df, E_real_df], axis=1)
-        print(E_df)
+        print(E_df.round(4))
         
         #self.view.print_E(E_real)
         
