@@ -9,6 +9,15 @@ from openbatlib import model
 from openbatlib import view
 
 
+class Error(Exception):
+    pass
+
+
+class InputError(Error):
+    def __init__(self, expression):
+        self.expression = expression
+
+
 class Controller(object):
     """Class to manage the models and view components
     """
@@ -47,9 +56,16 @@ class Controller(object):
             # set path to the reference case file
             freference = os.path.join(self.cwd, 'reference_case/ref_case_data.npz')
 
-        # Load system parameters
-        parameter = self._load_parameter(fparameter, system)
-        
+        try:
+            # Load system parameters
+            parameter = self._load_parameter(fparameter, system)
+            if not parameter['ref_1'] and ref_case == '1':
+                raise InputError('System not suitable with selected reference case 1!')
+            if not parameter['ref_2'] and ref_case == '2':
+                raise InputError('System not suitable with selected reference case 2!')
+
+        except InputError as err:
+            raise
         # Load PV generator input
         ppv = self._load_pv_input(freference, 'ppv')
         
