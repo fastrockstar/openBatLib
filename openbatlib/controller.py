@@ -66,9 +66,11 @@ class Controller(object):
         
         # Call model for DC coupled systems
         elif parameter['Top'] == 'DC':
-            Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
             d = model.transform_dict_to_array(parameter)
-            self.model = model.BatModDC(parameter, d, ppv, pl, Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out, dt)
+            self.model = model.BatModDC(parameter, d, ppv, pl, dt)
+            self.model.simulation()
+            self.model.bat_mod_res()
+            self.model.calculate_spi()
         
         # Call model for PV-coupled systems
         elif parameter['Top'] == 'PV':
