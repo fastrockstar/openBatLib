@@ -7,7 +7,7 @@ c = controller.Controller()
 rt = controller.Controller()
 
 # Use this method to start the simulation
-c.sim(system="H", ref_case="2", dt=1)
+c.sim(system="H", ref_case="1", dt=1)
 """
 #system = "H"
 
@@ -41,5 +41,4 @@ results = rt.real_time(parameter, _dt=dt, _soc0=soc0, _soc=soc, _Pr=Pr, _Pbs0=Pb
 
 
 c.print_E()
-
 c.print_SPI()

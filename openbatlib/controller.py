@@ -8,6 +8,7 @@ from numba import njit
 from openbatlib import model
 from openbatlib import view
 
+
 class Controller(object):
     """Class to manage the models and view components
     """
@@ -22,10 +23,8 @@ class Controller(object):
         # get path to working directory
         self.cwd = os.getcwd()
 
-
     def sim(self, fparameter=None, freference=None, system=None, ref_case=None, dt=1, spi=False):
         """Method for managing the simulation
-
 
         :param fparameter: File path to the system parameters
         :type fparameter: string
@@ -33,7 +32,7 @@ class Controller(object):
         :param system: Identifier for the system under simulation in the file
         :type system: string
 
-        :param ref_case: Indentifier for to chosse one of the two reference cases
+        :param ref_case: Identifier for to chose one of the two reference cases
         :type ref_case: string
 
         :param dt: time step width in seconds
@@ -41,11 +40,11 @@ class Controller(object):
         """
 
         if fparameter is None:
-            # set path to the refence case file
+            # set path to the reference case file
             fparameter = os.path.join(self.cwd, 'parameter/PerModPAR.xlsx')
 
         if freference is None:   
-            # set path to the refence case file
+            # set path to the reference case file
             freference = os.path.join(self.cwd, 'reference_case/ref_case_data.npz')
 
         # Load system parameters
@@ -59,9 +58,11 @@ class Controller(object):
 
         # Call model for AC coupled systems
         if parameter['Top'] == 'AC':
-            
             d = model.transform_dict_to_array(parameter)
             self.model = model.BatModAC(parameter, d, ppv, pl, dt)
+            self.model.simulation()
+            self.model.bat_mod_res()
+            self.model.calculate_spi()
         
         # Call model for DC coupled systems
         elif parameter['Top'] == 'DC':
