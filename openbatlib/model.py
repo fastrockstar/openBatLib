@@ -1,5 +1,6 @@
 import numpy as np
 import numba as nb
+from dataclasses import dataclass
 from numba import types
 from numba.typed import Dict
 from numba import njit
@@ -10,6 +11,16 @@ import csv
 from openpyxl import load_workbook
 from pyModbusTCP.client import ModbusClient
 from pyModbusTCP import utils
+
+@dataclass
+class Data:
+    Ppv: np.array
+    Pbat: np.array
+    Pperi: np.array
+    soc: np.array
+    soc0: int
+    Pbs0: int
+    E: dict
 
 
 class BatModDC(object):
@@ -47,58 +58,93 @@ class BatModDC(object):
     """
     _version = 0.1
 
-    def __init__(self, parameter, d, ppv, pl, Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out, dt):
+    def __init__(self, parameter, d, ppv, pl, dt):
         """Constructor method
         """
         self.parameter = parameter
         self.d = d
         self.ppv = ppv
         self.pl = pl
-        self.Pr = Pr
-        self.Prpv = Prpv
-        self.Ppv = Ppv
-        self.ppv2ac = ppv2ac
-        self.Ppv2ac_out = Ppv2ac_out
-        self.Ppv2ac_out0 = 0
-        self.Ppv2bat_in0 = 0
-
         self.dt = dt
-        # Initialization and preallocation
-        self.Pbat = np.zeros_like(self.ppv)  # DC power of the battery in W
-        self.soc = np.zeros_like(self.ppv)  # State of charge of the battery
-        # Input power of the PV2BAT conversion pathway in W
-        self.Ppv2bat_in = np.zeros_like(self.ppv)
-        # Output power of the BAT2AC conversion pathway in W
-        self.Pbat2ac_out = np.zeros_like(self.ppv)
-        self.Pbat2ac_out0 = 0
-        # AC power of the PV-battery system in W
-        self.Ppvbs = np.zeros_like(self.ppv)
+        self.th = False  # Start threshold for the recharging of the battery
+        self.spi = float()
 
-        self.th = 0  # Start threshold for the recharging of the battery
-        self.soc0 = 0  # State of charge of the battery in the first time step
+        # Initialization and preallocation
+        self.Real.Pr, self.Real.Prpv, self.Real.Ppv, self.Real.ppv2ac, self.Real.Ppv2ac_out = max_self_consumption(parameter, ppv, pl, pvmod=True)
+
+        self.Real.Ppv2ac_out0 = 0
+        self.Real.Ppv2bat_in0 = 0
+
+        self.Real.Pbat = np.zeros_like(self.ppv)  # DC power of the battery in W
+        self.Real.soc = np.zeros_like(self.ppv)  # State of charge of the battery
+        self.Real.soc0 = 0  # State of charge of the battery in the first time step
+        # Input power of the PV2BAT conversion pathway in W
+        self.Real.Ppv2bat_in = np.zeros_like(self.ppv)
+        # Output power of the BAT2AC conversion pathway in W
+        self.Real.Pbat2ac_out = np.zeros_like(self.ppv)
+        self.Real.Pbat2ac_out0 = 0
+        # AC power of the PV-battery system in W
+        self.Real.Ppvbs = np.zeros_like(self.ppv)
 
         # Additional power consumption of other system components (e.g. AC power meter) in W
-        self.Pperi = np.ones(self.ppv.size) * self.parameter['P_PERI_AC']
+        self.Real.Pperi = np.ones(self.ppv.size) * self.parameter['P_PERI_AC']
 
-        self.simulation()
+        self.Ideal.Ppv = np.maximum(0, self.ppv) * self.parameter['P_PV'] * 1000
+        self.Ideal.Pr = self.Ideal.Ppv - self.pl
+        self.Ideal.Pbat = np.zeros_like(self.ppv)
+        self.Ideal.soc = np.zeros_like(self.ppv)
+        self.Ideal.Ppv2bat_in = np.zeros_like(self.ppv)
+        self.Ideal.Ppv2bat_in = np.zeros_like(self.ppv)
+        self.Ideal.Pbat2ac_out = np.zeros_like(self.ppv)
+        self.Ideal.Ppvbs = np.zeros_like(self.ppv)
 
-        self.bat_mod_res()
+    @dataclass
+    class Real(Data):
+        Pr : np.array
+        Prpv : np.array
+        ppv2ac : np.array
+        Ppv2ac_out : np.array
+        Ppv2ac_out0 : int
+        Ppv2bat_in : np.array
+        Pbat2ac_out : np.array
+        Ppvbs : np.array
+
+    @dataclass
+    class Ideal(Real):
+        def __init__(self):
+            super().__init__()
 
     def simulation(self, pvmod=True):
         """Manages the Performance Simulation Model for AC-coupled PV-Battery Systems
         """
                                                                                                                                                                             
-        self.Ppv2ac_out, self.Ppv2bat_in, self.Ppv2bat_in0, self.Pbat2ac_out, self.Pbat2ac_out0, self.Ppvbs, self.Pbat, self.soc, self.soc0 = BatMod_DC(self.d, self.dt, self.soc0, self.soc, self.Pr, self.Prpv,  self.Ppv, self.Ppv2bat_in0, self.Ppv2bat_in, self.Pbat2ac_out0, self.Pbat2ac_out, self.Ppv2ac_out, self.Ppvbs, self.Pbat)
-        
+        self.Real.Ppv2ac_out, self.Real.Ppv2bat_in, self.Real.Ppv2bat_in0, self.Real.Pbat2ac_out, self.Real.Pbat2ac_out0, self.Real.Ppvbs, self.Real.Pbat, self.Real.soc, self.Real.soc0 = batmod_dc(
+            self.d, self.dt, self.Real.soc0, self.Real.soc, self.Real.Pr, self.Real.Prpv,  self.Real.Ppv, self.Real.Ppv2bat_in0, self.Real.Ppv2bat_in,
+            self.Real.Pbat2ac_out0, self.Real.Pbat2ac_out, self.Real.Ppv2ac_out, self.Real.Ppvbs, self.Real.Pbat)
+
+        self.Ideal.Pbat, self.Ideal.soc, self.Ideal.soc0 = batmod_dc_ideal(self.d, self.dt, self.Ideal.soc0, self.Ideal.soc, self.Ideal.Pr, self.Ideal.Pbat)
+
         # Define missing parameters
-        self.Ppv2ac = self.Ppv2ac_out  # AC output power of the PV2AC conversion pathway
-        self.Ppv2bat = self.Ppv2bat_in  # DC input power of the PV2BAT conversion pathway
+        self.Real.Ppv2ac = self.Real.Ppv2ac_out  # AC output power of the PV2AC conversion pathway
+        self.Real.Ppv2bat = self.Real.Ppv2bat_in  # DC input power of the PV2BAT conversion pathway
+
+        self.Ideal.Ppvbs = self.Ideal.Ppv - np.maximum(0, self.Ideal.Pbat) - (np.minimum(0, self.Ideal.Pbat))  # Realized AC power of the PV-battery system
+        self.Ideal.Ppv2ac = self.Ideal.Ppv - np.maximum(0, self.Ideal.Pbat)  # AC output power of the PV2AC conversion pathway
+        self.Ideal.Ppv2bat = np.maximum(0, self.Ideal.Pbat)  # DC input power of the PV2BAT conversion pathway
+
+        print()
 
     def bat_mod_res(self):
         """Function to calculate the power flows and energy sums including curtailment of PV power
         """
-        self.E = bat_res_mod(self.parameter, self.pl, self.Ppv, self.Pbat,
-                                   self.dt, self.Ppv2ac, self.Ppv2bat, self.Ppvbs, self.Pperi)
+        self.Real.E = bat_res_mod(self.parameter, self.pl, self.Real.Ppv, self.Real.Pbat,
+                                  self.dt, self.Real.Ppv2ac, self.Real.Ppv2bat, self.Real.Ppvbs, self.Real.Pperi)
+
+        self.Ideal.E = bat_res_mod_ideal(self.parameter, self.pl, self.Ideal.Ppv, self.Ideal.Pbat,
+                                         self.dt, self.Ideal.Ppv2ac, self.Ideal.Ppv2bat, self.Ideal.Ppvbs, self.Ideal.Pperi)
+
+    def calculate_spi(self):
+        self.spi = calculate_spi(_E_real=self.Real.E, _E_ideal=self.Ideal.E)
 
     def get_E(self):
         """Returns the energy sums of the simulation
@@ -106,7 +152,7 @@ class BatModDC(object):
         :return: Energy sums of the simulation in MWh
         :rtype: dict
         """
-        return self.E
+        return self.Real.E, self.Ideal.E
 
     def get_soc(self):
         """Returns the state of charge of the battery
@@ -123,6 +169,9 @@ class BatModDC(object):
         :rtype: numpy array
         """
         return self.Pbat
+
+    def get_SPI(self):
+        return self.spi
 
 
 class BatModAC(object):
@@ -158,43 +207,69 @@ class BatModAC(object):
     """
     _version = '0.1'
 
-    def __init__(self, parameter, d, ppv, pl, Pr, Ppv, Ppvs, Pperi, dt):
+    def __init__(self, parameter, d, ppv, pl, dt):
         """Constructor method
         """
         self.parameter = parameter
         self.d = d
         self.ppv = ppv
         self.pl = pl
-        self.Pr = Pr
-        self.Ppv = Ppv
-        self.Ppvs = Ppvs
-        self.Pperi = Pperi
         self.dt = dt
+        self.spi = float()
+        self.th = False  # Start threshold for the recharging of the battery
 
         # Initialization and preallocation
-        self.Pbat = np.zeros_like(self.ppv)  # DC power of the battery in W
-        self.Pbs = np.zeros_like(self.ppv) # AC power of the battery system in W
-        self.soc = np.zeros_like(self.ppv)  # State of charge of the battery
-        self.th = 0  # Start threshold for the recharging of the battery
-        self.soc0 = 0  # State of charge of the battery in the first time step
-        self.Pbs0 = 0 # AC power of the battery system of the previous time step in W
 
-        self.simulation()
+        self.Real.Pr, self.Real.Ppv, self.Real.Ppvs, self.Real.Pperi = max_self_consumption(parameter, ppv, pl, pvmod=True)
+        self.Real.Pbat = np.zeros_like(self.ppv)  # DC power of the battery in W
+        self.Real.Pbs = np.zeros_like(self.ppv)  # AC power of the battery system in W
+        self.Real.soc = np.zeros_like(self.ppv)  # State of charge of the battery
+        self.Real.soc0 = 0  # State of charge of the battery in the first time step
+        self.Real.Pbs0 = 0  # State of the battery storage in the previous time step
 
-        self.bat_mod_res()
+        self.Ideal.Ppv = np.maximum(0, ppv) * parameter['P_PV'] * 1000
+        self.Ideal.Pr = self.Ideal.Ppv - pl
+        self.Ideal.Pbat = np.zeros_like(self.ppv)
+        self.Ideal.Pbs = np.zeros_like(self.ppv)
+        self.Ideal.Pbs0 = 0
+        self.Ideal.soc = np.zeros_like(self.ppv)
+        self.Ideal.soc0 = 0
+        self.Ideal.Ppvs = self.Ideal.Ppv
+        self.Ideal.Pperi = np.zeros_like(self.ppv)
 
-    def simulation(self, pvmod=True):
+    @dataclass
+    class Real(Data):
+        Pr    : np.array
+        Ppvs  : np.array
+        Pbs   : np.array
+
+    @dataclass
+    class Ideal(Real):
+        def __init__(self):
+            super().__init__()
+
+    def simulation(self):
 
         """Manages the Performance Simulation Model for AC-coupled PV-Battery Systems
         """
-        self.Pbat, self.Pbs, self.soc, self.soc0, self.Pbs0 = BatMod_AC(
-            self.d, self.dt, self.soc0, self.soc, self.Pr, self.Pbs0, self.Pbs, self.Pbat)
+        
+        self.Real.Pbat, self.Real.Pbs, self.Real.soc, self.Real.soc0, self.Real.Pbs0 = batmod_ac(
+            self.d, self.dt, self.Real.soc0, self.Real.soc, self.Real.Pr, self.Real.Pbs0, self.Real.Pbs, self.Real.Pbat)
+        
+        self.Ideal.Pbs, self.Ideal.Pbat, self.Ideal.soc0, self.Ideal.soc = batmod_ac_ideal(
+                self.d, self.dt, self.Ideal.soc0, self.Ideal.soc, self.Ideal.Pr, self.Ideal.Pbat)
 
     def bat_mod_res(self):
         """Function to calculate the power flows and energy sums including curtailment of PV power
         """
-        self.E = bat_res_mod(
-            self.parameter, self.pl, self.Ppv, self.Pbat, self.dt, self.Ppvs, self.Pbs, self.Pperi)
+        self.Real.E = bat_res_mod(
+            self.parameter, self.pl, self.Real.Ppv, self.Real.Pbat, self.dt, self.Real.Ppvs, self.Real.Pbs, self.Real.Pperi)
+
+        self.Ideal.E = bat_res_mod_ideal(
+            self.parameter, self.pl, self.Ideal.Ppv, self.Ideal.Pbat, self.dt, self.Ideal.Ppvs, self.Ideal.Pbs, self.Ideal.Pperi)
+
+    def calculate_spi(self):
+        self.spi = calculate_spi(_E_real=self.Real.E, _E_ideal=self.Ideal.E)
 
     def get_E(self):
         """Returns the energy sums of the simulation
@@ -202,7 +277,7 @@ class BatModAC(object):
         :return: Energy sums of the simulation in MWh
         :rtype: dict
         """
-        return self.E
+        return self.Real.E, self.Ideal.E
 
     def get_soc(self):
         """Returns the state of charge of the battery
@@ -227,6 +302,9 @@ class BatModAC(object):
         :rtype: numpy array
         """
         return self.Pbs
+
+    def get_SPI(self):
+        return self.spi
 
 
 class BatModPV(object):
@@ -296,7 +374,7 @@ class BatModPV(object):
 
         # Simulation of the battery system
         #start = time.process_time()
-        self.soc, self.soc0, self.Ppv, self.Ppvbs, self.Pbat, self.Ppv2ac_out, self.Pbat2pv_out, self.Ppv2bat_in = BatMod_PV(self.d, self.dt, self.soc0, self.soc, self.Ppv, self.Pac, self.Ppv2bat_in0, self.Ppv2bat_in, self.Ppv2ac_out, self.Pbat2pv_out0, self.Pbat2pv_out, self.Ppvbs, self.Pbat)
+        self.soc, self.soc0, self.Ppv, self.Ppvbs, self.Pbat, self.Ppv2ac_out, self.Pbat2pv_out, self.Ppv2bat_in = batmod_pv(self.d, self.dt, self.soc0, self.soc, self.Ppv, self.Pac, self.Ppv2bat_in0, self.Ppv2bat_in, self.Ppv2ac_out, self.Pbat2pv_out0, self.Pbat2pv_out, self.Ppvbs, self.Pbat)
         #print(time.process_time()-start)
         # Define missing parameters
         self.Ppv2ac = self.Ppv2ac_out  # AC output power of the PV2AC conversion pathway
@@ -460,7 +538,7 @@ class ModBus(object):
                          self.soc0, self.set_val, self.P_ac, self.P_bat])
 
 
-def max_self_consumption(parameter, ppv, pl, pvmod=True):
+def max_self_consumption(parameter, ppv, pl, pvmod=True, ideal=False):
     """Function for maximizing self consumption
 
     :param parameter: PV battery system parameters
@@ -477,11 +555,18 @@ def max_self_consumption(parameter, ppv, pl, pvmod=True):
     if parameter['Top'] == 'AC':
 
         # DC power output of the PV generator
-        if pvmod:  # ppv: Normalized DC power output of the PV generator in kW/kWp
-            Ppv = np.minimum(
-                ppv * parameter['P_PV'], parameter['P_PV2AC_in']) * 1000
+        if pvmod:  # ppv: Normalized DC power output of the PV generator in kW/kWp 
+            if ideal:
+                Ppv = np.maximum(0, ppv ) * parameter['P_PV'] * 1000
+            else:
+                Ppv = np.minimum(ppv * parameter['P_PV'], parameter['P_PV2AC_in']) * 1000
         else:  # ppv: DC power output of the PV generator in W
-            Ppv = np.minimum(ppv, parameter['P_PV2AC_in'] * 1000)
+            
+            if ideal:
+                Ppv = np.maximum(0, ppv)
+            else:
+                Ppv = np.minimum(ppv, parameter['P_PV2AC_in'] * 1000)
+
 
         # Normalized input power of the PV inverter
         ppvinvin = Ppv / parameter['P_PV2AC_in'] / 1000
@@ -500,7 +585,10 @@ def max_self_consumption(parameter, ppv, pl, pvmod=True):
         Pperi[Ppvs == 0] += parameter['P_PVINV_AC']
 
         # Residual power
-        Pr = Ppvs - pl - Pperi
+        if ideal:
+            Pr = Ppv - pl
+        else:
+            Pr = Ppvs - pl - Pperi
 
         return Pr, Ppv, Ppvs, Pperi
 
@@ -578,7 +666,7 @@ def max_self_consumption(parameter, ppv, pl, pvmod=True):
 
 
 @nb.jit(nopython=True)
-def BatMod_AC(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
+def batmod_ac(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
     """Performance Simulation function for AC-coupled battery systems
 
     :param d: array containing parameters
@@ -667,14 +755,14 @@ def BatMod_AC(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
         # Check if the battery holds enough unused capacity for charging or discharging
         # Estimated amount of energy in Wh that is supplied to or discharged from the storage unit.
         E_bs_est = P_bs * _dt / 3600
-        
+
         # Reduce P_bs to avoid over charging of the battery
         if E_bs_est > 0 and E_bs_est > (_E_BAT - E_b0):
             P_bs = (_E_BAT - E_b0) * 3600 / _dt
         # When discharging take the correction factor into account
         elif E_bs_est < 0 and np.abs(E_bs_est) > (E_b0):
             P_bs = (E_b0 * 3600 / _dt) * (1-corr)
-        
+
         # Adjust the AC power of the battery system due to the stationary
         # deviations taking the minimum charging and discharging power into
         # account
@@ -775,8 +863,53 @@ def BatMod_AC(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
 
     return _Pbat, _Pbs, _soc, _soc0, _Pbs0
 
+
 @nb.jit(nopython=True)
-def BatMod_DC(d, _dt, _soc0, _soc, _Pr, _Prpv,  _Ppv, _Ppv2bat_in0, _Ppv2bat_in, _Pbat2ac_out0, _Pbat2ac_out, _Ppv2ac_out, _Ppvbs, _Pbat):
+def batmod_ac_ideal(d, _dt, _soc0, _soc, _Pr, _Pbat):
+
+    _E_BAT = d[0]
+
+    for t in range(_Pr.size):
+
+        # Energy content of the battery in the previous time step
+        E_b0 = _soc0 * _E_BAT * 1000
+
+        # Calculate the DC power of the battery from the residual power
+        P_bat = _Pr[t]
+
+        # Decision if the battery should be charged or discharged
+        if P_bat > 0 and _soc0 < 1:  # Battery charging
+            E_b = E_b0 + P_bat * _dt / 3600  # Change the energy content of the battery
+
+        elif P_bat < 0 and _soc0 > 0:  # Battery discharging
+
+            # Change the energy content of the battery
+            E_b = E_b0 + P_bat * _dt / 3600
+
+        else:  # Neither charging nor discharging of the battery
+
+            # Set the DC power of the battery to zero
+            P_bat = 0
+
+            # No change in the energy content of the battery
+            E_b = E_b0
+
+        # Transfer the realized DC power of the battery
+        _Pbat[t] = P_bat
+
+        # Calculate the state of charge of the battery
+        _soc0 = E_b / (_E_BAT * 1000)
+        _soc[t] = _soc0
+
+    # Define missing parameters
+
+    _Pbs = _Pbat  # Realized AC power of the battery system
+
+    return _Pbs, _Pbat, _soc0, _soc
+
+
+@nb.jit(nopython=True)
+def batmod_dc(d, _dt, _soc0, _soc, _Pr, _Prpv,  _Ppv, _Ppv2bat_in0, _Ppv2bat_in, _Pbat2ac_out0, _Pbat2ac_out, _Ppv2ac_out, _Ppvbs, _Pbat):
     """Performance simulation function for DC-coupled battery systems
 
     :param d: array containing parameters
@@ -1038,8 +1171,40 @@ def BatMod_DC(d, _dt, _soc0, _soc, _Pr, _Prpv,  _Ppv, _Ppv2bat_in0, _Ppv2bat_in,
 
     return _Ppv2ac_out, _Ppv2bat_in, _Ppv2bat_in0, _Pbat2ac_out, _Pbat2ac_out0, _Ppvbs, _Pbat, _soc, _soc0
 
+
 @nb.jit(nopython=True)
-def BatMod_PV(d, _dt, _soc0, _soc, _Ppv, _Pac, _Ppv2bat_in0, _Ppv2bat_in, _Ppv2ac_out, _Pbat2pv_out0, _Pbat2pv_out, _Ppvbs, _Pbat):
+def batmod_dc_ideal(d, _dt, _soc0, _soc, _Pr, _Pbat):
+
+    _E_BAT = d[0]
+
+    for t in range(_Pr.size):
+        # Energy content of the battery in the previous time step
+        E_b0 = _soc0 * _E_BAT * 1000
+
+        P_bat = _Pr[t]
+
+        if P_bat > 0 and _soc0 < 1:  # Battery charging
+            # Change the energy content of the battery
+            E_b = E_b0 + P_bat * _dt / 3600
+
+        elif P_bat < 0 and _soc0 > 0:  # Battery discharging
+            # Change the energy content of the battery
+            E_b = E_b0 + P_bat * _dt / 3600
+
+        else:  # Neither charging nor discharging of the battery
+            P_bat = 0
+            E_b = E_b0
+
+        _Pbat[t] = P_bat
+
+        _soc0 = E_b / (_E_BAT * 1000)
+        _soc[t] = _soc0
+
+    return _Pbat, _soc, _soc0
+
+
+@nb.jit(nopython=True)
+def batmod_pv(d, _dt, _soc0, _soc, _Ppv, _Pac, _Ppv2bat_in0, _Ppv2bat_in, _Ppv2ac_out, _Pbat2pv_out0, _Pbat2pv_out, _Ppvbs, _Pbat):
     """Performance simulation function for PV-coupled battery systems
 
     :param d: array containing parameters
@@ -1343,6 +1508,7 @@ def BatMod_PV(d, _dt, _soc0, _soc, _Ppv, _Pac, _Ppv2bat_in0, _Ppv2bat_in, _Ppv2a
 
     return _soc, _soc0, _Ppv, _Ppvbs, _Pbat, _Ppv2ac_out, _Pbat2pv_out, _Ppv2bat_in
 
+
 def bat_res_mod(_parameter, _Pl, _Ppv, _Pbat, _dt, *args):
     """Function for calculating energy sums
 
@@ -1541,6 +1707,135 @@ def bat_res_mod(_parameter, _Pl, _Ppv, _Pbat, _dt, *args):
 
     return _E
 
+
+def bat_res_mod_ideal(_parameter, _Pl, _Ppv, _Pbat, _dt, *args):
+    E = dict()  # Dictionary to store energy sums
+
+    if _parameter['Top'] == 'AC':
+        Ppvs = args[0]  # AC output power of the PV system
+        Pbs = args[1]  # AC power of the battery system
+        Pperi = args[2]  # Additional power consumption of the other system components
+
+    elif _parameter['Top'] == 'DC':
+        Ppv2ac = args[0]
+        Ppv2bat_in = args[1]
+        Ppvbs = args[2]
+        Pperi = args[3]
+        Ppv2ac_in = _Ppv - Ppv2bat_in
+
+    # Additional power consumption of the other system components
+    Pperi = np.zeros_like(_Ppv)
+    # Total load including the power consumption of the other system components
+    Plt = _Pl
+    # DC input power of the battery (charged)
+    Pbatin = np.maximum(0, _Pbat)
+    # DC output power of the battery (discharged)
+    Pbatout = np.minimum(0, _Pbat)
+
+    if _parameter['Top'] == 'AC':
+        # Grid power
+        Pg = Ppvs - _Pl - Pbs
+        # Residual power
+        Pr = Ppvs - Plt
+        # AC input power of the battery system
+        Pac2bs = np.maximum(0, Pbs)
+        # AC output power of the battery system
+        Pbs2ac = np.minimum(0, Pbs)
+        # Negative residual power (residual load demand)
+        Prn = np.minimum(0, Pr)
+        # Positive residual power (surplus PV power)
+        Prp = np.maximum(0, Pr)
+        # Direct use of PV power by the load
+        Ppvs2l = np.minimum(Ppvs, Plt)
+        # PV charging power
+        Ppvs2bs=np.minimum(Prp, Pac2bs)
+        # Grid charging power
+        Pg2bs=np.maximum(Pac2bs - Prp, 0)
+        # Grid supply power of the load
+        Pg2l=np.minimum(Prn - Pbs2ac, 0)
+        # Battery supply power of the load
+        Pbs2l=np.maximum(Prn, Pbs2ac)
+        # Battery feed-in power
+        Pbs2g=np.minimum(Pbs2ac - Prn, 0)
+        # PV feed-in power
+        Ppvs2g=np.maximum(Prp - Pac2bs, 0)
+
+    elif _parameter['Top'] == 'DC':
+        # Grid power
+        Pg = Ppvbs - _Pl
+        # Grid power demand of the PV-battery system
+        Pg2pvbs = np.minimum(0, Ppvbs)
+        # AC input power of the PV-battery system
+        Pac2pvbs = Pg2pvbs
+        # AC output power of the PV-battery system
+        Ppvbs2ac = np.maximum(0, Ppvbs)
+        # Load supply power by the PV-battery system
+        Ppvbs2l = np.minimum(_Pl, Ppvbs2ac)
+        # Load supply power by the grid
+        Pg2l = (Plt - Ppvbs2l)
+
+    # Curtailed PV power (AC output power)
+    Pct = np.zeros_like(_Ppv)
+    # Power demand from the grid
+    Pg2ac = np.minimum(0, Pg)
+    # Feed-in power to the grid
+    Pac2g=np.maximum(0, Pg)
+
+    # Energy sums
+
+    # Electrical demand including the energy consumption of the other system components
+    E['El'] = np.sum(np.abs(Plt)) / 3.6e9
+    # DC output of the PV generator including curtailment
+    E['Epv'] = np.sum(np.abs(_Ppv)) / 3.6e9
+    # DC input of the battery (charged)
+    E['Ebatin'] = np.sum(np.abs(Pbatin)) / 3.6e9
+    # DC output of the battery (discharged)
+    E['Ebatout'] = np.sum(np.abs(Pbatout)) / 3.6e9
+    # Grid feed-in
+    E['Eac2g'] = np.sum(np.abs(Pac2g)) / 3.6e9
+    # Grid demand
+    E['Eg2ac'] = np.sum(np.abs(Pg2ac)) / 3.6e9
+    # Load supply by the grid
+    E['Eg2l'] = np.sum(np.abs(Pg2l)) / 3.6e9
+    # Demand of the other system components
+    E['Eperi'] = np.sum(np.abs(Pperi)) / 3.6e9
+    # Curtailed PV energy
+    E['Ect'] = np.sum(np.abs(Pct)) / 3.6e9
+
+    if _parameter['Top'] == 'AC':
+
+        # AC output of the PV system including curtailment
+        E['Epvs']=np.sum(np.abs(Ppvs)) / 3.6e9
+        # AC input of the battery system
+        E['Eac2bs']=np.sum(np.abs(Pac2bs)) / 3.6e9
+        # AC output of the battery system
+        E['Ebs2ac']=np.sum(np.abs(Pbs2ac)) / 3.6e9
+        # Direct use of PV energy
+        E['Epvs2l']=np.sum(np.abs(Ppvs2l)) / 3.6e9
+        # PV charging
+        E['Epvs2bs']=np.sum(np.abs(Ppvs2bs)) / 3.6e9
+        # Grid charging
+        E['Eg2bs']=np.sum(np.abs(Pg2bs)) / 3.6e9
+        # PV feed-in
+        E['Epvs2g']=np.sum(np.abs(Ppvs2g)) / 3.6e9
+        # Load supply by the battery system
+        E['Ebs2l']=np.sum(np.abs(Pbs2l)) / 3.6e9
+        # Battery feed-in
+        E['Ebs2g']=np.sum(np.abs(Pbs2g)) / 3.6e9
+
+    elif _parameter['Top'] == 'DC':
+        # Grid demand of the PV-battery system
+        E['Eg2pvbs'] = np.sum(np.abs(Pg2pvbs)) / 3.6e9
+        # AC input of the PV-battery system
+        E['Eac2pvbs'] = np.sum(np.abs(Pac2pvbs)) / 3.6e9
+        # AC output of the PV-battery system
+        E['Epvbs2ac'] = np.sum(np.abs(Ppvbs2ac)) / 3.6e9
+        # Load supply by the PV-battery system
+        E['Epvbs2l'] = np.sum(np.abs(Ppvbs2l)) / 3.6e9
+
+    return E
+
+
 def load_parameter(fname, col_name):
     """Loads system parameter from excel file
 
@@ -1611,6 +1906,7 @@ def load_parameter(fname, col_name):
             parameter[par] /= 1000
         
     return parameter
+
 
 def eta2abc(parameter):
     """Function to calculate the parameters of the power loss functions (quadratic equations) from the path efficiencies
@@ -1808,6 +2104,7 @@ def eta2abc(parameter):
 
     return parameter
 
+
 def load_ref_case(fname, name):
     """Loads PV power or Load from the reference cases
 
@@ -1828,6 +2125,7 @@ def load_ref_case(fname, name):
     
     return data
 
+
 def resample_data_frame(df):
     """Function for resampling data frames
 
@@ -1839,6 +2137,7 @@ def resample_data_frame(df):
     df_rs = df.resample('15min').mean()
 
     return df_rs
+
 
 def transform_dict_to_array(parameter):
     """Function for transforming a dict to an numpy array
@@ -1922,3 +2221,28 @@ def transform_dict_to_array(parameter):
         d = np.append(d, parameter['t_CONSTANT'])
 
     return d
+
+
+def calculate_spi(_E_real, _E_ideal):
+    # SPI calculation for the reference case:
+    # Grid electricity price in Euro/kWh
+    pg2ac = 0.30
+    # Grid feed-in tariff in Euro/kWh
+    pac2g = 0.12
+    # Grid electricity costs without a PV-battery system in Euro/a
+    Cref = _E_ideal['El'] * pg2ac * 1000
+    # Net grid electricity costs with the lossless PV-battery system in Euro/a
+    Cideal = _E_ideal['Eg2ac'] * pg2ac * 1000 - _E_ideal['Eac2g'] * pac2g * 1000
+    # Net grid electricity costs with the real PV-battery system in Euro/a
+    Creal = _E_real['Eg2ac'] * pg2ac * 1000 - _E_real['Eac2g'] * pac2g * 1000
+    # Reduction of the net grid electricity costs by the lossless PV-battery system in Euro/a
+    dCideal = Cref - Cideal
+    # Reduction of the net grid electricity costs by the real PV-battery system in Euro/a
+    dCreal = Cref - Creal
+    # System Performance Index (SPI)
+    spi = dCreal / dCideal
+
+    return spi
+
+
+

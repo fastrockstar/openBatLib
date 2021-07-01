@@ -8,6 +8,16 @@ from numba import njit
 from openbatlib import model
 from openbatlib import view
 
+
+class Error(Exception):
+    pass
+
+
+class InputError(Error):
+    def __init__(self, expression):
+        self.expression = expression
+
+
 class Controller(object):
     """Class to manage the models and view components
     """
@@ -22,10 +32,8 @@ class Controller(object):
         # get path to working directory
         self.cwd = os.getcwd()
 
-
-    def sim(self, fparameter=None, freference=None, system=None, ref_case=None, dt=1):
+    def sim(self, fparameter=None, freference=None, system=None, ref_case=None, dt=1, spi=False):
         """Method for managing the simulation
-
 
         :param fparameter: File path to the system parameters
         :type fparameter: string
@@ -33,7 +41,7 @@ class Controller(object):
         :param system: Identifier for the system under simulation in the file
         :type system: string
 
-        :param ref_case: Indentifier for to chosse one of the two reference cases
+        :param ref_case: Identifier for to chose one of the two reference cases
         :type ref_case: string
 
         :param dt: time step width in seconds
@@ -41,16 +49,23 @@ class Controller(object):
         """
 
         if fparameter is None:
-            # set path to the refence case file
+            # set path to the reference case file
             fparameter = os.path.join(self.cwd, 'parameter/PerModPAR.xlsx')
 
         if freference is None:   
-            # set path to the refence case file
+            # set path to the reference case file
             freference = os.path.join(self.cwd, 'reference_case/ref_case_data.npz')
 
-        # Load system parameters
-        parameter = self._load_parameter(fparameter, system)
-        
+        try:
+            # Load system parameters
+            parameter = self._load_parameter(fparameter, system)
+            if not parameter['ref_1'] and ref_case == '1':
+                raise InputError('System not suitable with selected reference case 1!')
+            if not parameter['ref_2'] and ref_case == '2':
+                raise InputError('System not suitable with selected reference case 2!')
+
+        except InputError as err:
+            raise
         # Load PV generator input
         ppv = self._load_pv_input(freference, 'ppv')
         
@@ -59,15 +74,19 @@ class Controller(object):
 
         # Call model for AC coupled systems
         if parameter['Top'] == 'AC':
-            Pr, Ppv, Ppvs, Pperi = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
             d = model.transform_dict_to_array(parameter)
-            self.model = model.BatModAC(parameter, d, ppv, pl, Pr, Ppv, Ppvs, Pperi, dt)
+            self.model = model.BatModAC(parameter, d, ppv, pl, dt)
+            self.model.simulation()
+            self.model.bat_mod_res()
+            self.model.calculate_spi()
         
         # Call model for DC coupled systems
         elif parameter['Top'] == 'DC':
-            Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
             d = model.transform_dict_to_array(parameter)
-            self.model = model.BatModDC(parameter, d, ppv, pl, Pr, Prpv, Ppv, ppv2ac, Ppv2ac_out, dt)
+            self.model = model.BatModDC(parameter, d, ppv, pl, dt)
+            self.model.simulation()
+            self.model.bat_mod_res()
+            self.model.calculate_spi()
         
         # Call model for PV-coupled systems
         elif parameter['Top'] == 'PV':
@@ -222,8 +241,20 @@ class Controller(object):
         return parameter, pl
 
     def print_E(self):
-        E = self.model.get_E()
-        self.view.print_E(E)
+        E_real, E_ideal = self.model.get_E()
+        E_real_df = pd.DataFrame.from_dict(E_real, orient='index', columns=['real / MWh'])
+        E_ideal_df = pd.DataFrame.from_dict(E_ideal, orient='index', columns=['ideal / MWh'])
+        E_df = pd.concat([E_ideal_df, E_real_df], axis=1)
+        print(E_df.round(4))
+        
+        #self.view.print_E(E_real)
+        
+        #self.view.print_E(E_ideal)
+
+    def print_SPI(self):
+        spi = self.model.get_SPI()
+        self.view.print_SPI(spi)
+
 
     def E_to_csv(self, name):
         E = self.model.get_E()
