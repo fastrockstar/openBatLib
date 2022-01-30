@@ -2140,7 +2140,7 @@ def resample_data_frame(df):
 
 
 def transform_dict_to_array(parameter):
-    """Function for transforming a dict to an numpy array
+    """Function for transforming a dict to an numpy array.
 
     :param parameter: dict of system parameters
     :type parameter: dict
