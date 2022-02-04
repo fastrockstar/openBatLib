@@ -173,8 +173,7 @@ class Controller:
         return Pr
 
     def _dict_to_array(self, parameter):
-        d = model.transform_dict_to_array(parameter)
-        return d
+        return model.transform_dict_to_array(parameter)
 
     def get_parameter(self, fparameter, system):
         return self._load_parameter(fparameter, system)
@@ -187,9 +186,7 @@ class Controller:
         :param name: Name of the input series
         :type name: string
         """
-        ppv = model.load_ref_case(fname, name)
-
-        return ppv
+        return model.load_ref_case(fname, name)
 
     def _load_set_values(self, fname):
         return fname
