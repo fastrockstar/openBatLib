@@ -251,8 +251,8 @@ class Controller:
 
     def to_csv(self, name):
         soc = self.model.get_soc()
-        E = self.model.get_E()
-        self.view.store_to_csv(name=name, data=E)
+        e = self.model.get_E()
+        self.view.store_to_csv(name=name, data=e)
 
     def dict_to_csv(self, name):
         E = self.model.get_E()
