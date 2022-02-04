@@ -56,7 +56,7 @@ class Controller:
                 raise InputError('System not suitable with selected reference case 2!')
 
         except InputError as err:
-            raise
+            raise err
         # Load PV generator input
         ppv = self._load_pv_input(freference, 'ppv')
 
@@ -113,15 +113,14 @@ class Controller:
         :type system: string
         """
         parameter = self._load_parameter(fparameter, system)
-        #df_resample = model.resample_data_frame(df=data_frame)
 
         ppv = data_frame['ppv'].to_numpy()
         pl = data_frame['L'].to_numpy()
         parameter, pl_not_used = self._load_ref_case(parameter, fref, fparameter, ref_case)
 
-        Pr, Ppv_not_used, Ppvs_not_used, Pperi_not_used = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
+        Pr, _, _, _ = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
 
-        Pr = Pr * -1 # negative values for charging, positive values for discharging
+        Pr = Pr * -1  # negative values for charging, positive values for discharging
 
         self.model = model.ModBus(host, port, unit_id, Pr, dt, fname)
 
@@ -169,7 +168,7 @@ class Controller:
         return parameter
 
     def get_residual_power_AC(self, parameter, ppv, pl):
-        Pr, Ppv, Ppvs, Pperi = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
+        Pr, _, _, _ = model.max_self_consumption(parameter, ppv, pl, pvmod=True)
         return Pr
 
     def _dict_to_array(self, parameter):
