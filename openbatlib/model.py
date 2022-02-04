@@ -1,16 +1,13 @@
-import numpy as np
-import numba as nb
-from dataclasses import dataclass
-from numba import types
-from numba.typed import Dict
-from numba import njit
-import pandas as pd
-import time
 import datetime
 import csv
+from dataclasses import dataclass
+import numpy as np
+import numba as nb
+import pandas as pd
 from openpyxl import load_workbook
 from pyModbusTCP.client import ModbusClient
 from pyModbusTCP import utils
+
 
 @dataclass
 class Data:
@@ -761,7 +758,7 @@ def batmod_ac(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
             P_bs = (_E_BAT - E_b0) * 3600 / _dt
         # When discharging take the correction factor into account
         elif E_bs_est < 0 and np.abs(E_bs_est) > (E_b0):
-            P_bs = (E_b0 * 3600 / _dt) * (1-corr)
+            P_bs = -((E_b0 * 3600 / _dt) * (1-corr))
 
         # Adjust the AC power of the battery system due to the stationary
         # deviations taking the minimum charging and discharging power into
@@ -850,7 +847,7 @@ def batmod_ac(d, _dt, _soc0, _soc, _Pr, _Pbs0, _Pbs, _Pbat):
             E_b = E_b0
 
         # Calculate the state of charge of the battery
-        _soc0 = E_b / (_E_BAT)
+        _soc0 = E_b / _E_BAT
         _soc[t] = _soc0
 
         # Adjust the hysteresis threshold to avoid alternation
