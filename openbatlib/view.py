@@ -2,7 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import csv
 
-class View(object):
+
+class View:
     """View class to present the simulation results
 
     :param object: object
