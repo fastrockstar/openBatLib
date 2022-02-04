@@ -20,7 +20,7 @@ class Data:
     E: dict
 
 
-class BatModDC(object):
+class BatModDC:
     """Performance Simulation Class for DC-coupled PV-Battery systems
 
     :param parameter: PV battery system parameters
@@ -171,7 +171,7 @@ class BatModDC(object):
         return self.spi
 
 
-class BatModAC(object):
+class BatModAC:
     """Performance Simulation Class for AC-coupled PV-Battery systems
 
     :param parameter: PV battery system parameters
@@ -304,7 +304,7 @@ class BatModAC(object):
         return self.spi
 
 
-class BatModPV(object):
+class BatModPV:
     """Performance Simulation Class for PV-coupled PV-Battery systems
 
     :param parameter: PV battery system parameters
@@ -407,7 +407,7 @@ class BatModPV(object):
         return self.Pbat
 
 
-class ModBus(object):
+class ModBus:
     """Establishes connection to a battery system via ModBus protocol
 
     :param host: IP address of the host
