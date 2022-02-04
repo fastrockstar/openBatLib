@@ -1,9 +1,5 @@
-import pandas as pd
-import numpy as np
 import os
-from numba import types
-from numba.typed import Dict
-from numba import njit
+import pandas as pd
 
 from openbatlib import model
 from openbatlib import view
@@ -18,18 +14,13 @@ class InputError(Error):
         self.expression = expression
 
 
-class Controller(object):
+class Controller:
     """Class to manage the models and view components
     """
     _version = '0.1'
 
     def __init__(self):
-        """Constructor method
-        """
-
         self.view = view.View()
-
-        # get path to working directory
         self.cwd = os.getcwd()
 
     def sim(self, fparameter=None, freference=None, system=None, ref_case=None, dt=1, spi=False):
@@ -68,7 +59,7 @@ class Controller(object):
             raise
         # Load PV generator input
         ppv = self._load_pv_input(freference, 'ppv')
-        
+
         # Load data from reference cases (load and inverter parameters)
         parameter, pl = self._load_ref_case(parameter, freference, fparameter, ref_case)
 
