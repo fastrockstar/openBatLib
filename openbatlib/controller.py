@@ -234,15 +234,10 @@ class Controller:
         E_ideal_df = pd.DataFrame.from_dict(E_ideal, orient='index', columns=['ideal / MWh'])
         E_df = pd.concat([E_ideal_df, E_real_df], axis=1)
         print(E_df.round(4))
-        
-        #self.view.print_E(E_real)
-        
-        #self.view.print_E(E_ideal)
 
     def print_SPI(self):
         spi = self.model.get_SPI()
         self.view.print_SPI(spi)
-
 
     def E_to_csv(self, name):
         E = self.model.get_E()
